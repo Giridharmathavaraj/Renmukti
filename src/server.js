@@ -9,6 +9,12 @@ import jwt from 'jsonwebtoken';
 import Loan from './models/Loan.js';
 import User from './models/User.js';
 import Company from './models/Company.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 const JWT_SECRET = 'your_super_secret_jwt_key_here'; // In production, use environment variables!
 
@@ -337,6 +343,8 @@ app.post('/api/loans', authenticateToken, uploadFields, async (req, res) => {
 // Route to get all loans
 app.get('/api/loans', authenticateToken, async (req, res) => {
   try {
+
+
     let query = {};
     if (req.user.role !== 'superadmin') {
       // If Admin or User, filter loans by their company
@@ -528,6 +536,16 @@ app.post('/api/loans/:id/send-email', authenticateToken, async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 });
+// --- Static Assets (Production) ---
+// Serve the built frontend files from the 'dist' folder
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// SPA Catch-all: If it's not an API call, serve the index.html
+app.get(/^(?!\/api).+/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+});
+
 
 const PORT = 5000;
+
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
