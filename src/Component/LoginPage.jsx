@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Lock, User } from 'lucide-react';
 import './LoginPage.css';
+import { getApiUrl } from '../apiConfig';
 
 const LoginPage = ({ onLogin }) => {
     const {
@@ -20,7 +21,7 @@ const LoginPage = ({ onLogin }) => {
         setIsLoading(true);
 
         try {
-            const response = await fetch('/api/login', {
+            const response = await fetch(getApiUrl('/api/login'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
