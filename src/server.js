@@ -40,12 +40,18 @@ const uploadFields = upload.fields([
 ]);
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
-// Connect to your local MongoDB instance
-mongoose.connect('mongodb://127.0.0.1:27017/loanpro_db')
-  .then(() => console.log('✅ Local MongoDB Connected for LOS'))
+// Health Check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString(), environment: process.env.NODE_ENV || 'development' });
+});
+
+// Connect to MongoDB
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/loanpro_db';
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // --- Authentication Middleware ---
