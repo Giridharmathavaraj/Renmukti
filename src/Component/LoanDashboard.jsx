@@ -122,7 +122,8 @@ const LoanDashboard = () => {
             dpd,
             amountPastDue,
             balance: Math.max(0, balance),
-            nextPayment
+            nextPayment,
+            raw: loan // Preserve all original data for export
           };
         });
         setLoanData(formattedData);
@@ -158,6 +159,78 @@ const LoanDashboard = () => {
 
 
 
+
+  const handleExport = () => {
+    if (loanData.length === 0) {
+      setIsMoreMenuOpen(false);
+      return alert("No data to export");
+    }
+    
+    // Define headers for "all mandatory data"
+    const headers = [
+      "Loan ID", "First Name", "Last Name", "Email", "Phone", "SSN", "Gender", "DOB", 
+      "Citizenship", "Primary Zip", "Primary Address", "Primary State", "Primary Country",
+      "Property Status", "Rent Amount", "HouseHold Individuals", 
+      "Mailing Zip", "Mailing Address", "Mailing State", "Mailing Country",
+      "Loan Amount", "Loan Purpose", "Self Employed", "Company Name", "Company Zip", 
+      "Company City", "Company Country", "Income", "Hire Date", "SMS Status",
+      "Current Status", "Balance"
+    ];
+    
+    // Convert data to CSV rows
+    const csvRows = [
+      headers.join(','), // Header row
+      ...loanData.map(loan => {
+        const r = loan.raw || {};
+        return [
+          `"${loan.id}"`,
+          `"${r.firstName || ''}"`,
+          `"${r.lastName || ''}"`,
+          `"${r.email || ''}"`,
+          `"${r.phone || ''}"`,
+          `"${r.social_Security_Code || ''}"`,
+          `"${r.gender || ''}"`,
+          `"${r.dateOfBirth || ''}"`,
+          `"${r.citizenshipStatus || ''}"`,
+          `"${r.Primary_Address_Zip_Code || ''}"`,
+          `"${r.Primary_Address || ''}"`,
+          `"${r.Primary_Address_State || ''}"`,
+          `"${r.Primary_Address_Country || ''}"`,
+          `"${r.propertyStatus || ''}"`,
+          r.rentAmount || 0,
+          r.noOfIndividual || 0,
+          `"${r.Mailing_Address_Zip_Code || ''}"`,
+          `"${r.Mailing_Address || ''}"`,
+          `"${r.Mailing_Address_State || ''}"`,
+          `"${r.Mailing_Address_Country || ''}"`,
+          r.Request_Loan_Amount || 0,
+          `"${r.loanPurpose || ''}"`,
+          `"${r.selfEmployee || ''}"`,
+          `"${r.cCompanyName || ''}"`,
+          `"${r.cZipCode || ''}"`,
+          `"${r.cCity || ''}"`,
+          `"${r.cCountry || ''}"`,
+          `"${r.income || ''}"`,
+          `"${r.hireDate || ''}"`,
+          `"${r.smsStatus || ''}"`,
+          `"${loan.status}"`,
+          loan.balance.toFixed(2)
+        ].join(',');
+      })
+    ];
+    
+    // Create blob and download link
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Loan_Full_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setIsMoreMenuOpen(false);
+  };
 
   const handleControl = async (loan) => {
     try {
@@ -242,7 +315,7 @@ const LoanDashboard = () => {
               {isMoreMenuOpen && (
                 <div className="dropdown-content show" style={{ right: 0, left: 'auto', minWidth: '120px' }}>
                   <a href="#" onClick={(e) => { e.preventDefault(); alert('Import functionality coming soon'); setIsMoreMenuOpen(false); }}>Import</a>
-                  <a href="#" onClick={(e) => { e.preventDefault(); alert('Export functionality coming soon'); setIsMoreMenuOpen(false); }}>Export</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); handleExport(); }}>Export</a>
                 </div>
               )}
             </div>

@@ -2,10 +2,12 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from './src/models/User.js';
 import Company from './src/models/Company.js';
+import 'dotenv/config';
 
 async function setupShineSolution() {
   try {
-    await mongoose.connect('mongodb://127.0.0.1:27017/loanpro_db');
+    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/loanpro_db';
+    await mongoose.connect(MONGODB_URI);
     
     // Find Shine Solution
     let company = await Company.findOne({ name: 'Shine Solution' });

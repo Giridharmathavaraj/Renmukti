@@ -1,7 +1,9 @@
 import mongoose from 'mongoose';
 import Loan from './src/models/Loan.js';
+import 'dotenv/config';
 
-mongoose.connect('mongodb://127.0.0.1:27017/loanpro_db')
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/loanpro_db';
+mongoose.connect(MONGODB_URI)
   .then(async () => {
     const loan = await Loan.findOne().sort({ submittedAt: -1 });
     if (loan) {

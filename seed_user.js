@@ -1,11 +1,13 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from './src/models/User.js';
+import 'dotenv/config';
 
 async function seedUser() {
     try {
-        await mongoose.connect('mongodb://127.0.0.1:27017/loanpro_db');
-        console.log('✅ Local MongoDB Connected');
+        const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/loanpro_db';
+        await mongoose.connect(MONGODB_URI);
+        console.log('✅ MongoDB Connected');
 
         const username = 'admin';
         const password = 'password123';

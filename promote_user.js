@@ -1,7 +1,9 @@
 import mongoose from 'mongoose';
 import User from './src/models/User.js';
+import 'dotenv/config';
 
-mongoose.connect('mongodb://127.0.0.1:27017/loanpro_db')
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/loanpro_db';
+mongoose.connect(MONGODB_URI)
   .then(async () => {
     let user = await User.findOne({ username: 'GIRIDHAR M' });
     if (user) {
