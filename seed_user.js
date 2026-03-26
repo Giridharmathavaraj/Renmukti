@@ -12,19 +12,23 @@ async function seedUser() {
         const username = 'admin';
         const password = 'password123';
 
-        // Check if exists
+        // Check if exists and update role
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        
         const existing = await User.findOne({ username });
         if (existing) {
-            console.log('User already exists:', username);
+            existing.role = 'superadmin';
+            existing.password = hashedPassword;
+            await existing.save();
+            console.log('✅ Updated existing user to superadmin:', username);
             process.exit(0);
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
         const newUser = new User({
             username,
-            password: hashedPassword
+            password: hashedPassword,
+            role: 'superadmin' // Set as superadmin
         });
 
         await newUser.save();

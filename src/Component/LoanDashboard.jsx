@@ -232,6 +232,116 @@ const LoanDashboard = () => {
     setIsMoreMenuOpen(false);
   };
 
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target.result;
+        const rows = text.split('\n').map(row => {
+          // Robust CSV line splitter handling quotes
+          const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+          return row.split(regex).map(val => val.replace(/^"|"$/g, '').trim());
+        });
+        
+        if (rows.length < 2) return alert("Empty or invalid CSV");
+        
+        const headers = rows[0];
+        const dataRows = rows.slice(1).filter(r => r.length === headers.length && r.some(v => v !== ''));
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        // Define mapping from CSV Headers to Backend Fields
+        const headerMap = {
+          "First Name": "firstName",
+          "Last Name": "lastName",
+          "Email": "email",
+          "Phone": "phone",
+          "SSN": "social_Security_Code",
+          "Gender": "gender",
+          "DOB": "dateOfBirth",
+          "Citizenship": "citizenshipStatus",
+          "Primary Zip": "Primary_Address_Zip_Code",
+          "Primary Address": "Primary_Address",
+          "Primary State": "Primary_Address_State",
+          "Primary Country": "Primary_Address_Country",
+          "Property Status": "propertyStatus",
+          "Rent Amount": "rentAmount",
+          "HouseHold Individuals": "noOfIndividual",
+          "Mailing Zip": "Mailing_Address_Zip_Code",
+          "Mailing Address": "Mailing_Address",
+          "Mailing State": "Mailing_Address_State",
+          "Mailing Country": "Mailing_Address_Country",
+          "Loan Amount": "Request_Loan_Amount",
+          "Loan Purpose": "loanPurpose",
+          "Self Employed": "selfEmployee",
+          "Company Name": "cCompanyName",
+          "Company Zip": "cZipCode",
+          "Company City": "cCity",
+          "Company Country": "cCountry",
+          "Income": "income",
+          "Hire Date": "hireDate",
+          "SMS Status": "smsStatus"
+        };
+
+        for (const row of dataRows) {
+          const payload = {};
+          headers.forEach((header, index) => {
+            const field = headerMap[header];
+            if (field) {
+              let val = row[index];
+              // Type conversion
+              if (field === 'rentAmount' || field === 'noOfIndividual' || field === 'Request_Loan_Amount') {
+                val = Number(val);
+              }
+              payload[field] = val;
+            }
+          });
+
+          // Mandatory field check (basic)
+          if (!payload.firstName || !payload.lastName || !payload.email) {
+            failCount++;
+            continue;
+          }
+
+          try {
+            // Use the same FormData structure as LoanForm if needed, 
+            // but for simple import, JSON might be easier if the server supports it.
+            // However, the existing server expects multipart/form-data for loan creation.
+            // Let's create a FormData object.
+            const formData = new FormData();
+            Object.keys(payload).forEach(key => formData.append(key, payload[key]));
+            
+            const response = await fetch(getApiUrl("/api/loans"), {
+              method: "POST",
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: formData,
+            });
+            
+            if (response.ok) successCount++;
+            else failCount++;
+          } catch (err) {
+            failCount++;
+          }
+        }
+        
+        alert(`Import Complete!\nSuccess: ${successCount}\nFailed: ${failCount}`);
+        fetchLoans(); // Refresh list
+      } catch (error) {
+        console.error("Import error:", error);
+        alert("Failed to parse CSV file.");
+      }
+      setIsMoreMenuOpen(false);
+      e.target.value = ''; // Reset input
+    };
+    reader.readAsText(file);
+  };
+
   const handleControl = async (loan) => {
     try {
       // Use the full _id which we added to the mapped data
@@ -314,10 +424,17 @@ const LoanDashboard = () => {
               </button>
               {isMoreMenuOpen && (
                 <div className="dropdown-content show" style={{ right: 0, left: 'auto', minWidth: '120px' }}>
-                  <a href="#" onClick={(e) => { e.preventDefault(); alert('Import functionality coming soon'); setIsMoreMenuOpen(false); }}>Import</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); document.getElementById('import-input').click(); }}>Import</a>
                   <a href="#" onClick={(e) => { e.preventDefault(); handleExport(); }}>Export</a>
                 </div>
               )}
+              <input 
+                id="import-input" 
+                type="file" 
+                accept=".csv" 
+                style={{ display: 'none' }} 
+                onChange={handleImport} 
+              />
             </div>
           </div>
 
