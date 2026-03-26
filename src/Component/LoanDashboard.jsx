@@ -164,7 +164,7 @@ const LoanDashboard = () => {
       const loanId = loan._id;
       console.log("Fetching full details for:", loanId);
 
-      const response = await fetch(`/api/loans/${loanId}`, {
+      const response = await fetch(getApiUrl(`/api/loans/${loanId}`), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
