@@ -544,7 +544,7 @@ app.post('/api/loans/:id/send-email', authenticateToken, async (req, res) => {
 });
 // --- Static Assets (Production) ---
 // Serve the built frontend files from the 'dist' folder
-app.use(express.static(path.join(__dirname, '../dist')));
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // SPA Catch-all: If it's not an API call, serve the index.html
 // SPA Catch-all: If it's not an API call, serve the index.html
@@ -554,7 +554,7 @@ app.use((req, res, next) => {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
   // Otherwise, serve index.html for frontend routing
-  res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 
