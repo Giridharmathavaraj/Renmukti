@@ -6,9 +6,9 @@ import fs from 'fs';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import Loan from './models/Loan.js';
-import User from './models/User.js';
-import Company from './models/Company.js';
+import Loan from './src/models/Loan.js';
+import User from './src/models/User.js';
+import Company from './src/models/Company.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
