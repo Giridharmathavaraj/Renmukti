@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Nav from '../Nav';
+import { getApiUrl } from '../../apiConfig';
 import '../New Users/RecordForm.css';
 
 const AddCompany = () => {
@@ -23,7 +24,7 @@ const AddCompany = () => {
         e.preventDefault();
 
         try {
-            const response = await fetch('/api/companies', {
+            const response = await fetch(getApiUrl('/api/companies'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

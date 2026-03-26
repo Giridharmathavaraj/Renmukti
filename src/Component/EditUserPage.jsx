@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getApiUrl } from '../apiConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './EditUserPage.css';
 
@@ -57,7 +58,7 @@ function EditUserPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await fetch(`/api/loans/${loanData._id}`, {
+            const response = await fetch(getApiUrl(`/api/loans/${loanData._id}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

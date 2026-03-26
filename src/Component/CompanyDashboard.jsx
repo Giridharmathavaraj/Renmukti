@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './CompanyDashboard.css';
+import { getApiUrl } from '../apiConfig';
 // useNavigate removed as unused
 import Nav from './Nav';
 
@@ -19,7 +20,7 @@ function CompanyDashboard() {
     useEffect(() => {
         const fetchLoans = async () => {
             try {
-                const response = await fetch('/api/loans', {
+                const response = await fetch(getApiUrl('/api/loans'), {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 if (response.ok) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './LoanDashboard.css'
 import { useNavigate, useLocation } from 'react-router-dom';
 import Nav from './Nav';
+import { getApiUrl } from '../apiConfig';
 import {
   ChevronDown, Bell, Mail, HelpCircle, User,
   Search, Pin, List, Plus // Changed Thumbtack to Pin
@@ -24,7 +25,7 @@ const LoanDashboard = () => {
   const fetchLoans = async () => {
     try {
       console.log("Fetching loans...");
-      const response = await fetch('/api/loans', {
+      const response = await fetch(getApiUrl('/api/loans'), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

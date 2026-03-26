@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Nav from '../Nav';
+import { getApiUrl } from '../../apiConfig';
 import { Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,7 +18,7 @@ const Companies = () => {
 
     const fetchCompanies = async () => {
         try {
-            const response = await fetch('/api/companies', {
+            const response = await fetch(getApiUrl('/api/companies'), {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             if (!response.ok) throw new Error('Failed to fetch companies');

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
 import "./LoanForm.css";
+import { getApiUrl } from '../apiConfig';
 
 const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
   const [propertyStatus, setPropertyStatus] = useState("Rent");
@@ -106,7 +107,7 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
         }
       });
 
-      const response = await fetch("/api/loans", {
+      const response = await fetch(getApiUrl("/api/loans"), {
         method: "POST",
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

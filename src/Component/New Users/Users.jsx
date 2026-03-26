@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Nav from '../Nav';
+import { getApiUrl } from '../../apiConfig';
 
 import { UserCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -39,7 +40,7 @@ const Users = () => {
 
     const handleSaveClick = async (userId) => {
         try {
-            const response = await fetch(`/api/users/${userId}`, {
+            const response = await fetch(getApiUrl(`/api/users/${userId}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -73,8 +74,8 @@ const Users = () => {
         const fetchUsersAndCompanies = async () => {
             try {
                 const [usersRes, companiesRes] = await Promise.all([
-                    fetch('/api/users', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-                    fetch('/api/companies', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+                    fetch(getApiUrl('/api/users'), { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
+                    fetch(getApiUrl('/api/companies'), { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
                 ]);
 
                 if (!usersRes.ok || !companiesRes.ok) {

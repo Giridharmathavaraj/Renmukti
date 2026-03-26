@@ -1,5 +1,6 @@
 // RecordForm.jsx
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../apiConfig';
 import { useNavigate } from 'react-router-dom';
 import './RecordForm.css';
 import Nav from '../Nav';
@@ -23,7 +24,7 @@ const RecordForm = () => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const res = await fetch('/api/companies', {
+        const res = await fetch(getApiUrl('/api/companies'), {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (res.ok) {
@@ -56,7 +57,7 @@ const RecordForm = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('/api/register', {
+      const response = await fetch(getApiUrl('/api/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
