@@ -5,7 +5,7 @@ import Nav from './Nav';
 import { getApiUrl } from '../apiConfig';
 import {
   ChevronDown, Bell, Mail, HelpCircle, User,
-  Search, Pin, List, Plus // Changed Thumbtack to Pin
+  Search, Pin, List, Plus, MoreVertical // Added MoreVertical
 } from 'lucide-react';
 import LoanForm from './LoanForm';
 import ParticularUserPage from './ParticularUserPage';
@@ -17,6 +17,7 @@ const LoanDashboard = () => {
   console.log(navigate)
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   // State for loans
   const [loanData, setLoanData] = useState([]);
@@ -195,30 +196,56 @@ const LoanDashboard = () => {
         {/* PAGE TITLE & BUTTON */}
         <div className="page-header">
           <h1>Account Manager</h1>
-          <div className="dropdown">
-            <button
-              className="btn-dark"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            >
-              New Loan <ChevronDown size={14} />
-            </button>
-            {isDropdownOpen && (
-              <div className="dropdown-content show">
-                {/* <a href="#">Custom Onboarding</a>
-                <a href="#">Pre-Configured</a>
-                <a href="#">Standard</a>
-                <a href="#" onClick={(e)=>{
-                  setIsDropdownOpen(false)
-                }}>
-                  Quick Quote</a>
-                <hr /> */}
-                <a href="#" onClick={(e) => {
-                  e.preventDefault();
-                  setIsModalOpen(true);
-                  setIsDropdownOpen(false); // Close dropdown after selection
-                }}>Loan Application</a>
-              </div>
-            )}
+          <div className="header-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div className="dropdown">
+              <button
+                className="btn-dark"
+                onClick={() => {
+                  setIsDropdownOpen(!isDropdownOpen);
+                  setIsMoreMenuOpen(false);
+                }}
+              >
+                New Loan <ChevronDown size={14} />
+              </button>
+              {isDropdownOpen && (
+                <div className="dropdown-content show">
+                  <a href="#" onClick={(e) => {
+                    e.preventDefault();
+                    setIsModalOpen(true);
+                    setIsDropdownOpen(false);
+                  }}>Loan Application</a>
+                </div>
+              )}
+            </div>
+
+            <div className="more-dropdown" style={{ position: 'relative' }}>
+              <button
+                className="btn-icon-only"
+                onClick={() => {
+                  setIsMoreMenuOpen(!isMoreMenuOpen);
+                  setIsDropdownOpen(false);
+                }}
+                style={{
+                  background: 'none',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  padding: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#333'
+                }}
+              >
+                <MoreVertical size={18} />
+              </button>
+              {isMoreMenuOpen && (
+                <div className="dropdown-content show" style={{ right: 0, left: 'auto', minWidth: '120px' }}>
+                  <a href="#" onClick={(e) => { e.preventDefault(); alert('Import functionality coming soon'); setIsMoreMenuOpen(false); }}>Import</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); alert('Export functionality coming soon'); setIsMoreMenuOpen(false); }}>Export</a>
+                </div>
+              )}
+            </div>
           </div>
 
         </div>
