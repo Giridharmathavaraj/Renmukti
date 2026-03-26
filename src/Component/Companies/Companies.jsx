@@ -17,7 +17,7 @@ const Companies = () => {
 
     const fetchCompanies = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/companies', {
+            const response = await fetch('/api/companies', {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             if (!response.ok) throw new Error('Failed to fetch companies');
@@ -54,7 +54,7 @@ const Companies = () => {
 
     const handleSaveClick = async (companyId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/companies/${companyId}`, {
+            const response = await fetch(`/api/companies/${companyId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

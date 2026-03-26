@@ -133,7 +133,7 @@ const MailsMessagesView = ({ loanData, setLoanData }) => {
     if (!subject || !message) return alert("Subject and message required");
     setIsSending(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/loans/${loanData._id}/send-email`, {
+      const response = await fetch(`/api/loans/${loanData._id}/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1143,7 +1143,7 @@ const TransactionsView = ({
                               });
 
                               try {
-                                const response = await fetch(`http://localhost:5000/api/loans/${loanData._id}`, {
+                                const response = await fetch(`/api/loans/${loanData._id}`, {
                                   method: 'PUT',
                                   headers: {
                                     'Content-Type': 'application/json',
@@ -1478,7 +1478,7 @@ function ParticularUserPage() {
   React.useEffect(() => {
     const fetchFreshData = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/loans/${loanData._id}`, {
+        const response = await fetch(`/api/loans/${loanData._id}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (response.ok) {
@@ -1514,7 +1514,7 @@ function ParticularUserPage() {
 
   const handleSaveSetup = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/loans/${loanData._id}`, {
+      const response = await fetch(`/api/loans/${loanData._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1608,7 +1608,7 @@ function ParticularUserPage() {
         ...acc,
         isDefault: acc._id === accountId
       }));
-      const response = await fetch(`http://localhost:5000/api/loans/${loanData._id}`, {
+      const response = await fetch(`/api/loans/${loanData._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ bankingDetails: updatedAccounts })
@@ -1622,7 +1622,7 @@ function ParticularUserPage() {
     try {
       const existingAccounts = Array.isArray(loanData?.bankingDetails) ? loanData.bankingDetails : loanData?.bankingDetails ? [loanData.bankingDetails] : [];
       const updatedAccounts = existingAccounts.filter(acc => acc._id !== accountId);
-      const response = await fetch(`http://localhost:5000/api/loans/${loanData._id}`, {
+      const response = await fetch(`/api/loans/${loanData._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ bankingDetails: updatedAccounts })
@@ -1698,7 +1698,7 @@ function ParticularUserPage() {
         ];
       }
 
-      const response = await fetch(`http://localhost:5000/api/loans/${loanData._id}`, {
+      const response = await fetch(`/api/loans/${loanData._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1741,7 +1741,7 @@ function ParticularUserPage() {
     formData.append(field, file);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/loans/${loanData._id}/documents`, {
+      const response = await fetch(`/api/loans/${loanData._id}/documents`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

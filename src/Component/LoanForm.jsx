@@ -106,7 +106,7 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
         }
       });
 
-      const response = await fetch("http://localhost:5000/api/loans", {
+      const response = await fetch("/api/loans", {
         method: "POST",
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

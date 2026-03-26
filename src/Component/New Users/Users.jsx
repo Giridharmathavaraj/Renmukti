@@ -39,7 +39,7 @@ const Users = () => {
 
     const handleSaveClick = async (userId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+            const response = await fetch(`/api/users/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -73,8 +73,8 @@ const Users = () => {
         const fetchUsersAndCompanies = async () => {
             try {
                 const [usersRes, companiesRes] = await Promise.all([
-                    fetch('http://localhost:5000/api/users', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-                    fetch('http://localhost:5000/api/companies', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+                    fetch('/api/users', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
+                    fetch('/api/companies', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
                 ]);
 
                 if (!usersRes.ok || !companiesRes.ok) {

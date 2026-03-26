@@ -23,7 +23,7 @@ const RecordForm = () => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/companies', {
+        const res = await fetch('/api/companies', {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (res.ok) {
@@ -56,7 +56,7 @@ const RecordForm = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:5000/api/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
