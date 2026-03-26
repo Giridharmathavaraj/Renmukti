@@ -541,7 +541,8 @@ app.post('/api/loans/:id/send-email', authenticateToken, async (req, res) => {
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // SPA Catch-all: If it's not an API call, serve the index.html
-app.get('*', (req, res) => {
+// SPA Catch-all: If it's not an API call, serve the index.html
+app.use((req, res, next) => {
   // If request matches /api, return 404 JSON (catches invalid API routes)
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API endpoint not found' });
