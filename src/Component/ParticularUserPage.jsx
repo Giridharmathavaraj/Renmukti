@@ -500,7 +500,7 @@ const OverviewView = ({ loanData, fullName }) => (
           <div className="profile-info">
             <h2>{fullName} (Sample)</h2>
             <a href={`mailto:${loanData.email}`} className="email">{loanData.email}</a>
-            <span className="department">Engineering</span>
+            <span className="badge-status">Engineering</span>
           </div>
           <Settings size={16} color="#666" style={{ cursor: 'pointer', marginLeft: 'auto' }} />
         </div>
@@ -1472,6 +1472,7 @@ function ParticularUserPage() {
   const [showBankingDropdown, setShowBankingDropdown] = React.useState(false);
   const [isAddingAccount, setIsAddingAccount] = React.useState(false);
   const [isEditingSetup, setIsEditingSetup] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
   // Loan Setup Details State
   const [setupDetails, setSetupDetails] = React.useState({
@@ -1489,27 +1490,35 @@ function ParticularUserPage() {
   React.useEffect(() => {
     const fetchFreshData = async (id) => {
       try {
+        setError(null);
         const response = await fetch(getApiUrl(`/api/loans/${id}`), {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        if (response.ok) {
-          const freshData = await response.json();
-          setLoanData(freshData);
-          setSetupDetails(prev => ({
-            ...prev,
-            interestRate: freshData?.interestRate || prev.interestRate,
-            interestRateType: freshData?.interestRateType || prev.interestRateType,
-            tierInterestRate: freshData?.tierInterestRate || prev.tierInterestRate,
-            contractDate: freshData?.contractDate ? new Date(freshData.contractDate).toISOString().split('T')[0] : prev.contractDate,
-            firstPaymentDate: freshData?.firstPaymentDate ? new Date(freshData.firstPaymentDate).toISOString().split('T')[0] : prev.firstPaymentDate,
-            discount: freshData?.discount || prev.discount,
-            underwritingRefinanceFee: freshData?.underwritingRefinanceFee || prev.underwritingRefinanceFee,
-            paymentFrequency: freshData?.paymentFrequency || prev.paymentFrequency,
-            Request_Loan_Amount: freshData?.Request_Loan_Amount || prev.Request_Loan_Amount
-          }));
+        
+        const contentType = response.headers.get("content-type");
+        if (!response.ok || !contentType || !contentType.includes("application/json")) {
+          const text = await response.text();
+          console.error("Server returned non-JSON response:", text.slice(0, 200));
+          throw new Error(`Server Error: Expected JSON but received ${contentType || 'unknown'}. Please check backend routing.`);
         }
+
+        const freshData = await response.json();
+        setLoanData(freshData);
+        setSetupDetails(prev => ({
+          ...prev,
+          interestRate: freshData?.interestRate || prev.interestRate,
+          interestRateType: freshData?.interestRateType || prev.interestRateType,
+          tierInterestRate: freshData?.tierInterestRate || prev.tierInterestRate,
+          contractDate: freshData?.contractDate ? new Date(freshData.contractDate).toISOString().split('T')[0] : prev.contractDate,
+          firstPaymentDate: freshData?.firstPaymentDate ? new Date(freshData.firstPaymentDate).toISOString().split('T')[0] : prev.firstPaymentDate,
+          discount: freshData?.discount || prev.discount,
+          underwritingRefinanceFee: freshData?.underwritingRefinanceFee || prev.underwritingRefinanceFee,
+          paymentFrequency: freshData?.paymentFrequency || prev.paymentFrequency,
+          Request_Loan_Amount: freshData?.Request_Loan_Amount || prev.Request_Loan_Amount
+        }));
       } catch (err) {
         console.error("Error fetching fresh loan data on mount:", err);
+        setError(err.message);
       }
     };
     if (loanData?._id) fetchFreshData(loanData._id);
@@ -1790,6 +1799,38 @@ function ParticularUserPage() {
 
   return (
     <div className="user-page-container">
+      {error && (
+        <div style={{
+          backgroundColor: '#ffebee',
+          color: '#c62828',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          margin: '20px',
+          border: '1px solid #ffcdd2',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '14px',
+          zIndex: 1000
+        }}>
+          <Activity size={18} />
+          <span>{error}</span>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ 
+              marginLeft: 'auto', 
+              background: 'none', 
+              border: 'none', 
+              color: '#c62828', 
+              cursor: 'pointer', 
+              textDecoration: 'underline',
+              fontSize: '13px'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       <Nav style={{ display: "static" }} />
       <header className="page-header">
         <div className="header-title-section">

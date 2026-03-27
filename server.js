@@ -37,7 +37,7 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   // Fallback to Ethereal for development if no credentials provided
   nodemailer.createTestAccount().then(account => {
     emailTransporter = nodemailer.createTransport({
-      host: smtp.gmail.com,
+      host: 'smtp.gmail.com',
       port: 465,
       secure: true,
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
@@ -60,6 +60,12 @@ const uploadFields = upload.fields([
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Diagnostic Request Logger - MUST be at the top
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
 // Health Check
 app.get('/health', (req, res) => {

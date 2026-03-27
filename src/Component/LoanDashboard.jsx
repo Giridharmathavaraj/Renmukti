@@ -5,7 +5,7 @@ import Nav from './Nav';
 import { getApiUrl } from '../apiConfig';
 import {
   ChevronDown, Bell, Mail, HelpCircle, User,
-  Search, Pin, List, Plus, MoreVertical, ChevronUp, ChevronsUpDown // Added ChevronUp, ChevronsUpDown
+  Search, Pin, List, Plus, MoreVertical, ChevronUp, ChevronsUpDown, Activity // Added Activity
 } from 'lucide-react';
 import LoanForm from './LoanForm';
 import ParticularUserPage from './ParticularUserPage';
@@ -26,6 +26,7 @@ const LoanDashboard = () => {
   // State for loans and companies
   const [loanData, setLoanData] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [error, setError] = useState(null);
 
   // Fetch Loans from Backend
   const fetchLoans = async () => {
@@ -36,11 +37,20 @@ const LoanDashboard = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Loans fetched:", data);
-        // Transform data to match table structure if needed
-        const formattedData = data.map(loan => {
+
+      const contentType = response.headers.get("content-type");
+      if (!response.ok || !contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Server returned non-JSON response:", text.slice(0, 200));
+        throw new Error(`Server Error: Expected JSON but received ${contentType || 'unknown'}. Please check backend routing.`);
+      }
+
+      const data = await response.json();
+      console.log("Loans fetched:", data);
+      
+      // Transform data to match table structure if needed
+      const formattedData = data.map(loan => {
+        // ... (existing transform logic remains same)
           // Dynamic Calculations
           const principal = Number(loan.Request_Loan_Amount ?? 0);
           const statedRate = Number(loan.interestRate ?? 12) / 100;
@@ -135,23 +145,11 @@ const LoanDashboard = () => {
           };
         });
         setLoanData(formattedData);
-      } else {
-        console.error("Fetch response not ok:", response.status);
-        if (response.status === 401 || response.status === 403) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('username');
-          localStorage.removeItem('role');
-          localStorage.removeItem('companyId');
-          navigate('/login');
-        } else {
-          alert(`Failed to fetch loans: Server responded with status ${response.status}`);
-        }
+      } catch (error) {
+        console.error("Error fetching loans:", error);
+        setError(error.message);
       }
-    } catch (error) {
-      console.error("Error fetching loans:", error);
-      alert(`Error fetching loans: ${error.message}. Is the backend server running?`);
-    }
-  };
+    };
 
   const fetchCompanies = async () => {
     try {
@@ -431,6 +429,38 @@ const LoanDashboard = () => {
 
   return (
     <div className="dashboard-wrapper">
+      {error && (
+        <div style={{
+          backgroundColor: '#ffebee',
+          color: '#c62828',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          margin: '20px',
+          border: '1px solid #ffcdd2',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '14px',
+          zIndex: 1000
+        }}>
+          <Activity size={18} />
+          <span>{error}</span>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ 
+              marginLeft: 'auto', 
+              background: 'none', 
+              border: 'none', 
+              color: '#c62828', 
+              cursor: 'pointer', 
+              textDecoration: 'underline',
+              fontSize: '13px'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {/* HEADER */}
       <Nav />
 
