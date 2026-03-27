@@ -195,7 +195,7 @@ const LoanDashboard = () => {
     const term = searchTerm.toLowerCase();
     return (
       loan.name.toLowerCase().includes(term) ||
-      loan.id.toLowerCase().includes(term) ||
+      loan._id.toLowerCase().includes(term) ||
       (loan.companyName && loan.companyName.toLowerCase().includes(term))
     );
   });

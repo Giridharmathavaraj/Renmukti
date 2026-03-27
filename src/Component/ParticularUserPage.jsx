@@ -140,7 +140,7 @@ const MailsMessagesView = ({ loanData, setLoanData }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ subject, message })
+        body: JSON.stringify({ subject, message, recipient: loanData.email })
       });
       if (response.ok) {
         const updatedLoan = await response.json();
@@ -456,6 +456,11 @@ const OverviewWidgets = ({ loanData }) => {
           <ChevronDown size={14} />
         </div>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '24px', color: '#333' }}>Payoff Breakdown</h3>
+ 
+        <div style={{ marginBottom: '24px', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <input type="text" placeholder="MM/dd/yy" style={{ border: 'none', outline: 'none', color: '#666', width: '100%', fontSize: '13px' }} />
+          <Calendar size={14} color="#666" />
+        </div>
 
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
