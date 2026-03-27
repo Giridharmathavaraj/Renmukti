@@ -26,3 +26,6 @@ dist-ssr
 lint_output.txt
 server_error.log
 
+# Environment variables
+.env
+
