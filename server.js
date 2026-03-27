@@ -61,14 +61,22 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Diagnostic Request Logger - MUST be at the top
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  
+  // Hardening: If Catalyst/Onslate strips /api/ from the URL, add it back for Express routes
+  const apiPrefixes = ['/loans', '/users', '/companies', '/login', '/register', '/health'];
+  const needsPrefix = apiPrefixes.some(p => req.url.startsWith(p));
+  
+  if (needsPrefix && !req.url.startsWith('/api')) {
+    req.url = '/api' + req.url;
+    console.log(`[Harden] Re-prefixed URL: ${req.url}`);
+  }
   next();
 });
 
 // Health Check
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString(), environment: process.env.NODE_ENV || 'development' });
 });
 
