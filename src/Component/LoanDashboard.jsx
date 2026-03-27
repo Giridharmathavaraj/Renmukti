@@ -5,7 +5,7 @@ import Nav from './Nav';
 import { getApiUrl } from '../apiConfig';
 import {
   ChevronDown, Bell, Mail, HelpCircle, User,
-  Search, Pin, List, Plus, MoreVertical // Added MoreVertical
+  Search, Pin, List, Plus, MoreVertical, ChevronUp, ChevronsUpDown // Added ChevronUp, ChevronsUpDown
 } from 'lucide-react';
 import LoanForm from './LoanForm';
 import ParticularUserPage from './ParticularUserPage';
@@ -18,9 +18,14 @@ const LoanDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
+  // Only the 'owner' account sees the Company column
+  const isOwnerAccount = localStorage.getItem('username') === 'owner';
 
-  // State for loans
+  // State for loans and companies
   const [loanData, setLoanData] = useState([]);
+  const [companies, setCompanies] = useState([]);
 
   // Fetch Loans from Backend
   const fetchLoans = async () => {
@@ -43,25 +48,25 @@ const LoanDashboard = () => {
           const fees = Number(loan.underwritingRefinanceFee ?? 0);
           const frequency = loan.paymentFrequency || 'Monthly';
           const annualInterestRate = rateType === 'Monthly' ? statedRate * 12 : statedRate;
-          
+
           const termYears = 5;
           let periodsPerYear = 12;
           if (frequency === 'Weekly') periodsPerYear = 52;
           if (frequency === 'Bi-Weekly') periodsPerYear = 26;
           if (frequency === 'Quarterly') periodsPerYear = 4;
           if (frequency === 'Annually') periodsPerYear = 1;
-          
+
           const totalPeriods = termYears * periodsPerYear;
           const interestExpense = principal * annualInterestRate * termYears;
           const financeCharge = interestExpense + fees;
           const totalOfPayments = principal + financeCharge;
           const basePayment = totalPeriods > 0 ? totalOfPayments / totalPeriods : 0;
-          
+
           const completedCount = Object.keys(loan.completedPayments || {}).length;
           const principalRatio = totalOfPayments > 0 ? (principal / totalOfPayments) : 0;
           const paidPrincipal = completedCount * basePayment * principalRatio;
           const balance = principal - paidPrincipal;
-          
+
           let schedule = loan.transactions || [];
           if (!schedule.length && loan.firstPaymentDate) {
             let currentDate = new Date(loan.firstPaymentDate + 'T12:00:00');
@@ -82,16 +87,16 @@ const LoanDashboard = () => {
               else if (frequency === 'Annually') currentDate.setFullYear(currentDate.getFullYear() + 1);
             }
           }
-          
+
           const today = new Date();
           let amountPastDue = 0;
           let dpd = 0;
           let nextPayment = 'N/A';
-          
+
           if (schedule.length > 0) {
             const nextPending = schedule.find(t => t.Status === 'Pending');
             if (nextPending) nextPayment = nextPending.date || 'N/A';
-            
+
             schedule.forEach(t => {
               if (t.Status === 'Pending' && t.date) {
                 const txDate = new Date(t.date);
@@ -112,7 +117,7 @@ const LoanDashboard = () => {
           } else if (dpd > 0) {
             subStatus = 'Open - Delinquent';
           }
-          
+
           return {
             _id: loan._id,
             id: loan._id.substring(loan._id.length - 6), // Last 6 chars of ID
@@ -123,7 +128,10 @@ const LoanDashboard = () => {
             amountPastDue,
             balance: Math.max(0, balance),
             nextPayment,
-            raw: loan // Preserve all original data for export
+            // Capture company info for owner only
+            companyId: loan.companyId,
+            companyName: (typeof loan.companyId === 'object' ? loan.companyId?.name : null),
+            raw: loan
           };
         });
         setLoanData(formattedData);
@@ -145,16 +153,67 @@ const LoanDashboard = () => {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch(getApiUrl('/api/companies'), {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        setCompanies(await response.json());
+      }
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+    }
+  };
+
   useEffect(() => {
     fetchLoans();
+    if (isOwnerAccount) fetchCompanies();
   }, []);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const filteredLoans = loanData.filter(loan =>
-    loan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    loan.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const sortedLoans = React.useMemo(() => {
+    let sortableItems = [...loanData];
+    if (sortConfig.key !== null) {
+      sortableItems.sort((a, b) => {
+        const aValue = a[sortConfig.key] || '';
+        const bValue = b[sortConfig.key] || '';
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [loanData, sortConfig]);
+
+  const filteredLoans = sortedLoans.filter(loan => {
+    const term = searchTerm.toLowerCase();
+    return (
+      loan.name.toLowerCase().includes(term) ||
+      loan.id.toLowerCase().includes(term) ||
+      (loan.companyName && loan.companyName.toLowerCase().includes(term))
+    );
+  });
+
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <ChevronsUpDown size={14} style={{ marginLeft: '5px', verticalAlign: 'middle', opacity: 0.5 }} />;
+    return sortConfig.direction === 'asc' ?
+      <ChevronUp size={14} style={{ marginLeft: '5px', verticalAlign: 'middle' }} /> :
+      <ChevronDown size={14} style={{ marginLeft: '5px', verticalAlign: 'middle' }} />;
+  };
 
 
 
@@ -165,18 +224,18 @@ const LoanDashboard = () => {
       setIsMoreMenuOpen(false);
       return alert("No data to export");
     }
-    
+
     // Define headers for "all mandatory data"
     const headers = [
-      "Loan ID", "First Name", "Last Name", "Email", "Phone", "SSN", "Gender", "DOB", 
+      "Loan ID", "First Name", "Last Name", "Email", "Phone", "SSN", "Gender", "DOB",
       "Citizenship", "Primary Zip", "Primary Address", "Primary State", "Primary Country",
-      "Property Status", "Rent Amount", "HouseHold Individuals", 
+      "Property Status", "Rent Amount", "HouseHold Individuals",
       "Mailing Zip", "Mailing Address", "Mailing State", "Mailing Country",
-      "Loan Amount", "Loan Purpose", "Self Employed", "Company Name", "Company Zip", 
+      "Loan Amount", "Loan Purpose", "Self Employed", "Company Name", "Company Zip",
       "Company City", "Company Country", "Income", "Hire Date", "SMS Status",
       "Current Status", "Balance"
     ];
-    
+
     // Convert data to CSV rows
     const csvRows = [
       headers.join(','), // Header row
@@ -218,7 +277,7 @@ const LoanDashboard = () => {
         ].join(',');
       })
     ];
-    
+
     // Create blob and download link
     const csvString = csvRows.join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
@@ -235,7 +294,7 @@ const LoanDashboard = () => {
   const handleImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -245,15 +304,15 @@ const LoanDashboard = () => {
           const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
           return row.split(regex).map(val => val.replace(/^"|"$/g, '').trim());
         });
-        
+
         if (rows.length < 2) return alert("Empty or invalid CSV");
-        
+
         const headers = rows[0];
         const dataRows = rows.slice(1).filter(r => r.length === headers.length && r.some(v => v !== ''));
-        
+
         let successCount = 0;
         let failCount = 0;
-        
+
         // Define mapping from CSV Headers to Backend Fields
         const headerMap = {
           "First Name": "firstName",
@@ -314,7 +373,7 @@ const LoanDashboard = () => {
             // Let's create a FormData object.
             const formData = new FormData();
             Object.keys(payload).forEach(key => formData.append(key, payload[key]));
-            
+
             const response = await fetch(getApiUrl("/api/loans"), {
               method: "POST",
               headers: {
@@ -322,14 +381,14 @@ const LoanDashboard = () => {
               },
               body: formData,
             });
-            
+
             if (response.ok) successCount++;
             else failCount++;
           } catch (err) {
             failCount++;
           }
         }
-        
+
         alert(`Import Complete!\nSuccess: ${successCount}\nFailed: ${failCount}`);
         fetchLoans(); // Refresh list
       } catch (error) {
@@ -428,12 +487,12 @@ const LoanDashboard = () => {
                   <a href="#" onClick={(e) => { e.preventDefault(); handleExport(); }}>Export</a>
                 </div>
               )}
-              <input 
-                id="import-input" 
-                type="file" 
-                accept=".csv" 
-                style={{ display: 'none' }} 
-                onChange={handleImport} 
+              <input
+                id="import-input"
+                type="file"
+                accept=".csv"
+                style={{ display: 'none' }}
+                onChange={handleImport}
               />
             </div>
           </div>
@@ -473,14 +532,17 @@ const LoanDashboard = () => {
               <thead>
                 <tr>
                   <th><input type="checkbox" /></th>
-                  <th>ACCOUNT <ChevronDown size={10} /></th>
+                  <th onClick={() => requestSort('name')} style={{ cursor: 'pointer' }}>ACCOUNT {getSortIcon('name')}</th>
                   <th>WARNING FLAGS</th>
-                  <th>DAYS PAST DUE <ChevronDown size={10} /></th>
-                  <th>LOAN STATUS <ChevronDown size={10} /></th>
-                  <th>LOAN SUB STATUS <ChevronDown size={10} /></th>
-                  <th>AMOUNT PAST DUE <ChevronDown size={10} /></th>
-                  <th>PRINCIPAL BALANCE <ChevronDown size={10} /></th>
-                  <th>NEXT PAYMENT DATE <ChevronDown size={10} /></th>
+                  <th onClick={() => requestSort('dpd')} style={{ cursor: 'pointer' }}>DAYS PAST DUE {getSortIcon('dpd')}</th>
+                  <th onClick={() => requestSort('status')} style={{ cursor: 'pointer' }}>LOAN STATUS {getSortIcon('status')}</th>
+                  <th onClick={() => requestSort('subStatus')} style={{ cursor: 'pointer' }}>LOAN SUB STATUS {getSortIcon('subStatus')}</th>
+                  <th onClick={() => requestSort('amountPastDue')} style={{ cursor: 'pointer' }}>AMOUNT PAST DUE {getSortIcon('amountPastDue')}</th>
+                  <th onClick={() => requestSort('balance')} style={{ cursor: 'pointer' }}>PRINCIPAL BALANCE {getSortIcon('balance')}</th>
+                  <th onClick={() => requestSort('nextPayment')} style={{ cursor: 'pointer' }}>NEXT PAYMENT DATE {getSortIcon('nextPayment')}</th>
+                  {isOwnerAccount && (
+                    <th onClick={() => requestSort('companyName')} style={{ cursor: 'pointer' }}>COMPANY {getSortIcon('companyName')}</th>
+                  )}
                 </tr>
               </thead>
               <tbody >
@@ -509,6 +571,13 @@ const LoanDashboard = () => {
                     <td>${loan.amountPastDue.toFixed(2)}</td>
                     <td>${loan.balance.toFixed(2)}</td>
                     <td>{loan.nextPayment}</td>
+                    {isOwnerAccount && (
+                      <td>
+                        {loan.companyName || 
+                         companies.find(c => c._id === (typeof loan.companyId === 'object' ? loan.companyId?._id : loan.companyId))?.name || 
+                         (typeof loan.companyId === 'string' ? loan.companyId : 'N/A')}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

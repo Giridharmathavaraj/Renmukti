@@ -2,7 +2,10 @@ import express from 'express';
 import nodemailer from 'nodemailer';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import fs from 'fs';
+
+dotenv.config();
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -131,8 +134,7 @@ app.get('/api/companies', authenticateToken, async (req, res) => {
 // Update a company
 app.put('/api/companies/:id', authenticateToken, async (req, res) => {
   try {
-    // Only 'owner' username gets full superadmin access to all companies
-    const isMainAdmin = req.user.role === 'superadmin' && req.user.username === 'owner';
+    const isMainAdmin = req.user.username === 'owner';
     // Admins can ONLY edit THEIR own company.
     if (!isMainAdmin && req.user.companyId !== req.params.id) {
       return res.status(403).json({ error: 'You do not have permission to edit this company.' });
@@ -371,13 +373,13 @@ app.get('/api/loans', authenticateToken, async (req, res) => {
 
     let query = {};
     // Only 'owner' username gets full superadmin access to all companies
-    const isMainAdmin = req.user.role === 'superadmin' && req.user.username === 'owner';
-    
+    const isMainAdmin = req.user.username === 'owner';
+
     if (!isMainAdmin && req.user.companyId) {
       query.companyId = req.user.companyId;
     } else if (!isMainAdmin && !req.user.companyId) {
-       // Non-main admin without company sees nothing
-       return res.json([]); 
+      // Non-main admin without company sees nothing
+      return res.json([]);
     }
 
     const loans = await Loan.find(query).populate({ path: 'companyId', select: 'name', model: Company });
