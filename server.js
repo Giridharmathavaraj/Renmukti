@@ -19,14 +19,29 @@ const __dirname = path.dirname(__filename);
 const JWT_SECRET = 'your_super_secret_jwt_key_here'; // In production, use environment variables!
 
 let emailTransporter;
-nodemailer.createTestAccount().then(account => {
+
+// Gmail SMTP Configuration
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   emailTransporter = nodemailer.createTransport({
-    host: account.smtp.host,
-    port: account.smtp.port,
-    secure: account.smtp.secure,
-    auth: { user: account.user, pass: account.pass },
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
   });
-}).catch(err => console.error("Ethereal test account error:", err));
+  console.log("✅ Gmail SMTP Transporter Initialized");
+} else {
+  // Fallback to Ethereal for development if no credentials provided
+  nodemailer.createTestAccount().then(account => {
+    emailTransporter = nodemailer.createTransport({
+      host: account.smtp.host,
+      port: account.smtp.port,
+      secure: account.smtp.secure,
+      auth: { user: account.user, pass: account.pass },
+    });
+    console.log("⚠️ Using Ethereal Test Account (Real emails will NOT be sent)");
+  }).catch(err => console.error("Ethereal test account error:", err));
+}
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -116,8 +131,10 @@ app.get('/api/companies', authenticateToken, async (req, res) => {
 // Update a company
 app.put('/api/companies/:id', authenticateToken, async (req, res) => {
   try {
-    // Only superadmin can edit ANY company. Admins can ONLY edit THEIR own company.
-    if (req.user.role !== 'superadmin' && req.user.companyId !== req.params.id) {
+    // Only 'owner' username gets full superadmin access to all companies
+    const isMainAdmin = req.user.role === 'superadmin' && req.user.username === 'owner';
+    // Admins can ONLY edit THEIR own company.
+    if (!isMainAdmin && req.user.companyId !== req.params.id) {
       return res.status(403).json({ error: 'You do not have permission to edit this company.' });
     }
 
@@ -202,6 +219,7 @@ app.post('/api/login', async (req, res) => {
     // Create JWT token including RBAC data
     const payload = {
       userId: user._id,
+      username: user.username,
       role: user.role,
       companyId: user.companyId
     };
@@ -352,13 +370,17 @@ app.get('/api/loans', authenticateToken, async (req, res) => {
 
 
     let query = {};
-    if (req.user.role !== 'superadmin') {
-      // If Admin or User, filter loans by their company
-      if (!req.user.companyId) return res.json([]);
+    // Only 'owner' username gets full superadmin access to all companies
+    const isMainAdmin = req.user.role === 'superadmin' && req.user.username === 'owner';
+    
+    if (!isMainAdmin && req.user.companyId) {
       query.companyId = req.user.companyId;
+    } else if (!isMainAdmin && !req.user.companyId) {
+       // Non-main admin without company sees nothing
+       return res.json([]); 
     }
 
-    const loans = await Loan.find(query);
+    const loans = await Loan.find(query).populate({ path: 'companyId', select: 'name', model: Company });
     res.json(loans);
   } catch (error) {
     fs.appendFileSync('server_error.log', `${new Date().toISOString()} - Error: ${error.message}\n${error.stack}\n`);
@@ -384,26 +406,26 @@ app.get('/api/loans/:id', authenticateToken, async (req, res) => {
 app.put('/api/loans/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Auto-generate audit comment
     const updateComment = {
       updatedBy: req.user.username || 'System',
       updatedAt: new Date(),
       message: 'Loan details and configuration updated'
     };
-    
+
     const updatedData = { ...req.body };
     delete updatedData.comments; // Prevent overriding array from frontend direct puts
-    
+
     // Grab the original before update for comparison
     const originalLoan = await Loan.findById(id);
 
     const updatedLoan = await Loan.findByIdAndUpdate(
-      id, 
-      { 
+      id,
+      {
         ...updatedData,
         $push: { comments: updateComment }
-      }, 
+      },
       { new: true }
     );
 
@@ -411,39 +433,42 @@ app.put('/api/loans/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: "Loan not found" });
     }
 
+    let mailSent = false;
     // CHECK IF WE NEED TO SEND AUTOMATED EMAILS
     if (updatedLoan && originalLoan) {
       if (req.body.transactions || req.body.completedPayments) {
         if (emailTransporter && updatedLoan.email) {
+          mailSent = true;
           const subject = "Alert: Your Loan Payment Date was Updated";
           const text = `Dear ${updatedLoan.firstName},\n\nA payment date on your transaction schedule was recently modified.\nPlease log in to your portal to review the updated schedule.\n\nThank you,\nLOS Team`;
           emailTransporter.sendMail({
-            from: '"LOS Updates" <giridharmathavaraj@gmail.com>',
+            from: `"LOS Updates" <${process.env.EMAIL_USER || 'giridharmathavaraj@gmail.com'}>`,
             to: updatedLoan.email,
             subject, text
           }).then(async i => {
-            console.log('Payment Email Sent: ' + nodemailer.getTestMessageUrl(i));
+            console.log('Payment Email Sent: ' + (i.messageId || 'Success'));
             await Loan.findByIdAndUpdate(id, { $push: { emails: { sentBy: 'System', sentAt: new Date(), subject, message: text, recipient: updatedLoan.email } } });
           }).catch(console.error);
         }
       }
       if (req.body.bankingDetails) {
         if (emailTransporter && updatedLoan.email) {
+          mailSent = true;
           const subject = "Alert: Your Bank Details were Updated";
           const text = `Dear ${updatedLoan.firstName},\n\nThe banking details for ${req.body.bankingDetails.accountType || 'your account'} were successfully updated.\n\nThank you,\nLOS Security`;
           emailTransporter.sendMail({
-            from: '"LOS Security" <giridharmathavaraj@gmail.com>',
+            from: `"LOS Security" <${process.env.EMAIL_USER || 'giridharmathavaraj@gmail.com'}>`,
             to: updatedLoan.email,
             subject, text
           }).then(async i => {
-            console.log('Banking Email Sent: ' + nodemailer.getTestMessageUrl(i));
+            console.log('Banking Email Sent: ' + (i.messageId || 'Success'));
             await Loan.findByIdAndUpdate(id, { $push: { emails: { sentBy: 'System', sentAt: new Date(), subject, message: text, recipient: updatedLoan.email } } });
           }).catch(console.error);
         }
       }
     }
 
-    res.json(updatedLoan);
+    res.json({ ...updatedLoan.toObject(), mailSent });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -478,7 +503,7 @@ app.patch('/api/loans/:id/documents', authenticateToken, uploadFields, async (re
           };
         }
       }
-      
+
       if (!loan.comments) loan.comments = [];
       loan.comments.push({
         updatedBy: req.user.username || 'System',
@@ -512,18 +537,18 @@ app.post('/api/loans/:id/send-email', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { subject, message, recipient } = req.body;
-    
+
     const loan = await Loan.findById(id);
     if (!loan) return res.status(404).json({ message: "Loan not found" });
 
     if (emailTransporter) {
       const info = await emailTransporter.sendMail({
-        from: '"LOS Team" <giridharmathavaraj@gmail.com>',
+        from: `"LOS Team" <${process.env.EMAIL_USER || 'giridharmathavaraj@gmail.com'}>`,
         to: recipient || loan.email,
         subject: subject,
         text: message
       });
-      console.log('Custom Email Sent: ' + nodemailer.getTestMessageUrl(info));
+      console.log('Custom Email Sent: ' + (info.messageId || 'Success'));
 
       const newEmailLog = {
         sentBy: req.user.username || 'System',

@@ -457,10 +457,6 @@ const OverviewWidgets = ({ loanData }) => {
         </div>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '24px', color: '#333' }}>Payoff Breakdown</h3>
 
-        <div style={{ marginBottom: '24px', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <input type="text" placeholder="MM/dd/yy" style={{ border: 'none', outline: 'none', color: '#666', width: '100%', fontSize: '13px' }} />
-          <Calendar size={14} color="#666" />
-        </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#555' }}>
@@ -1156,9 +1152,17 @@ const TransactionsView = ({
                                   })
                                 });
 
-                                if (!response.ok) {
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  setLoanData(data);
+                                  if (data.mailSent) {
+                                    alert("Mail Sent Successfully! Logged in Database bounds.");
+                                  } else {
+                                    alert("Transaction Saved Successfully!");
+                                  }
+                                } else {
                                   if (response.status === 403 || response.status === 401) {
-                                    alert("Security Session Expired (403 Forbidden): Please Log Out and Log Back In to save transactions.");
+                                    alert("Security Session Expired: Please Log Out and Log Back In to save transactions.");
                                   } else {
                                     alert("Failed to save completed payment to database.");
                                   }
@@ -1531,7 +1535,11 @@ function ParticularUserPage() {
         const updatedLoan = await response.json();
         setLoanData(updatedLoan);
         setIsEditingSetup(false);
-        alert('Loan Setup Details Saved Successfully!');
+        if (updatedLoan.mailSent) {
+          alert("Mail Sent Successfully! Logged in Database bounds.");
+        } else {
+          alert('Loan Setup Details Saved Successfully!');
+        }
       } else {
         alert('Failed to save details');
       }
@@ -1711,7 +1719,11 @@ function ParticularUserPage() {
       if (response.ok) {
         const updatedLoan = await response.json();
         setLoanData(updatedLoan);
-        alert('Banking Details Saved! A notification email has been dispatched.');
+        if (updatedLoan.mailSent) {
+          alert("Mail Sent Successfully! Logged in Database bounds.");
+        } else {
+          alert('Banking Details Saved Successfully!');
+        }
         setIsAddingAccount(false);
         clearForm();
       } else {
