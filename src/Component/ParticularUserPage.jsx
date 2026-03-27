@@ -1466,6 +1466,7 @@ function ParticularUserPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [loanData, setLoanData] = React.useState(location.state?.loanData || null);
+  const initialLoanId = location.state?.loanId; // Support for older dashboard builds
   const [activeTab, setActiveTab] = React.useState('Overview');
   const [isUploading, setIsUploading] = React.useState(false);
   const [showBankingDropdown, setShowBankingDropdown] = React.useState(false);
@@ -1486,9 +1487,9 @@ function ParticularUserPage() {
   });
 
   React.useEffect(() => {
-    const fetchFreshData = async () => {
+    const fetchFreshData = async (id) => {
       try {
-        const response = await fetch(getApiUrl(`/api/loans/${loanData._id}`), {
+        const response = await fetch(getApiUrl(`/api/loans/${id}`), {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (response.ok) {
@@ -1511,8 +1512,9 @@ function ParticularUserPage() {
         console.error("Error fetching fresh loan data on mount:", err);
       }
     };
-    if (loanData?._id) fetchFreshData();
-  }, []);
+    if (loanData?._id) fetchFreshData(loanData._id);
+    else if (initialLoanId) fetchFreshData(initialLoanId);
+  }, [initialLoanId]);
 
   const handleSetupChange = (e) => {
     const { name, value, type, checked } = e.target;
