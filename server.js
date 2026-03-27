@@ -37,10 +37,10 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   // Fallback to Ethereal for development if no credentials provided
   nodemailer.createTestAccount().then(account => {
     emailTransporter = nodemailer.createTransport({
-      host: account.smtp.host,
-      port: account.smtp.port,
-      secure: account.smtp.secure,
-      auth: { user: account.user, pass: account.pass },
+      host: smtp.gmail.com,
+      port: 465,
+      secure: true,
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
     console.log("⚠️ Using Ethereal Test Account (Real emails will NOT be sent)");
   }).catch(err => console.error("Ethereal test account error:", err));
@@ -154,7 +154,7 @@ app.put('/api/companies/:id', authenticateToken, async (req, res) => {
 
     res.json(updatedCompany);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("SMTP Error:", error); res.status(400).json({ message: error.message });
   }
 });
 
@@ -296,7 +296,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
 
     res.json(updatedUser);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("SMTP Error:", error); res.status(400).json({ message: error.message });
   }
 });
 
@@ -472,7 +472,7 @@ app.put('/api/loans/:id', authenticateToken, async (req, res) => {
 
     res.json({ ...updatedLoan.toObject(), mailSent });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("SMTP Error:", error); res.status(400).json({ message: error.message });
   }
 });
 
@@ -566,7 +566,7 @@ app.post('/api/loans/:id/send-email', authenticateToken, async (req, res) => {
       res.status(500).json({ message: "Email transporter not configured" });
     }
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("SMTP Error:", error); res.status(400).json({ message: error.message });
   }
 });
 // --- Static Assets (Production) ---
