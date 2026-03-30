@@ -62,34 +62,16 @@ app.use(express.json());
 app.use(cors());
 
 app.use((req, res, next) => {
-  const now = new Date().toISOString();
-  console.log(`[${now}] Incoming: ${req.method} ${req.url}`);
-  console.log(`[${now}] Headers:`, JSON.stringify(req.headers));
-
-  // 1. Catalyst/Onslate Normalization: Strip common prefixes
-  const prefixesToStrip = ['/server/phase1', '/app/server/phase1'];
-  for (const prefix of prefixesToStrip) {
-    if (req.url.startsWith(prefix)) {
-      req.url = req.url.replace(prefix, '');
-      console.log(`[Catalyst] Stripped ${prefix}, new URL: ${req.url}`);
-    }
-  }
-
-  // 2. Ensure /api prefix: If it's a known API path without the /api prefix, add it.
-  const knownPaths = ['/loans', '/users', '/companies', '/login', '/register', '/health', '/api'];
-  const needsApiPrefix = knownPaths.some(p => req.url.startsWith(p));
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   
-  if (needsApiPrefix && !req.url.startsWith('/api')) {
+  // Basic Pre-fixing logic for production builds, optional on localhost
+  const apiPrefixes = ['/loans', '/users', '/companies', '/login', '/register', '/health', '/api'];
+  const needsPrefix = apiPrefixes.some(p => req.url.startsWith(p));
+  
+  if (needsPrefix && !req.url.startsWith('/api')) {
     req.url = '/api' + req.url;
     console.log(`[Harden] Re-prefixed URL: ${req.url}`);
   }
-
-  // 3. Trailing Slash Normalization: Strip trailing slash for consistent matching
-  if (req.url.length > 1 && req.url.endsWith('/')) {
-    req.url = req.url.slice(0, -1);
-    console.log(`[Harden] Stripped trailing slash: ${req.url}`);
-  }
-
   next();
 });
 
