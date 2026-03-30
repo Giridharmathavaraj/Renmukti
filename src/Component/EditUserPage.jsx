@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getApiUrl } from '../apiConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './EditUserPage.css';
@@ -45,6 +45,43 @@ function EditUserPage() {
         cZipCode: loanData?.cZipCode || '',
         cCountry: loanData?.cCountry || 'US Citizen',
     });
+
+    const [availableStates, setAvailableStates] = useState([]);
+    const [showOtherState, setShowOtherState] = useState(false);
+
+    useEffect(() => {
+        const fetchStates = async () => {
+            try {
+                const response = await fetch(getApiUrl('/api/states'), {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const approved = data.filter(s => s.status === 'Approved');
+                    setAvailableStates(approved);
+
+                    // If existing state is not in the approved list, show the "Other" input
+                    if (formData.Primary_Address_State && !approved.some(s => s.name === formData.Primary_Address_State)) {
+                        setShowOtherState(true);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching states:", error);
+            }
+        };
+        fetchStates();
+    }, []);
+
+    const handleStateChange = (e) => {
+        const value = e.target.value;
+        if (value === "Others") {
+            setShowOtherState(true);
+            setFormData(prev => ({ ...prev, Primary_Address_State: "" }));
+        } else {
+            setShowOtherState(false);
+            setFormData(prev => ({ ...prev, Primary_Address_State: value }));
+        }
+    };
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -158,10 +195,30 @@ function EditUserPage() {
                     <div className="form-row">
                         <div className="form-group">
                             <label htmlFor="Primary_Address_State">State</label>
-                            <select id="Primary_Address_State" name="Primary_Address_State" className="form-control" value={formData.Primary_Address_State} onChange={handleChange}>
-                                <option value="US Citizen">US Citizen</option>
+                            <select 
+                                id="Primary_Address_State" 
+                                name="Primary_Address_State" 
+                                className="form-control" 
+                                value={showOtherState ? "Others" : formData.Primary_Address_State} 
+                                onChange={handleStateChange}
+                            >
+                                <option value="">Select State</option>
+                                {availableStates.map(s => (
+                                    <option key={s._id} value={s.name}>{s.name} ({s.code})</option>
+                                ))}
                                 <option value="Others">Others</option>
                             </select>
+                            {showOtherState && (
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    style={{ marginTop: '8px' }}
+                                    placeholder="Enter State Name"
+                                    value={formData.Primary_Address_State}
+                                    name="Primary_Address_State"
+                                    onChange={handleChange}
+                                />
+                            )}
                         </div>
                         <div className="form-group">
                             <label htmlFor="Primary_Address_Zip_Code">Zip Code</label>

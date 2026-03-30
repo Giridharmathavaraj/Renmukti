@@ -17,6 +17,13 @@ const StateSettings = () => {
   const [newMaxLoanAmount, setNewMaxLoanAmount] = useState('');
   const [editingId, setEditingId] = useState(null);
   
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -177,22 +184,34 @@ const StateSettings = () => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       const csvData = event.target.result;
-      const rows = csvData.split('\n').map(row => row.split(','));
-      
-      // Skip header row if it contains 'name'
-      const startIndex = (rows[0][0] && rows[0][0].toLowerCase().includes('name')) ? 1 : 0;
+      const lines = csvData.split(/\r?\n/);
       
       const parsedStates = [];
-      for (let i = startIndex; i < rows.length; i++) {
-        const row = rows[i];
+      // Robust CSV row parser using regex to handle quotes and commas correctly
+      const parseCsvRow = (text) => {
+        const re_value = /(?!\s*$)\s*(?:'([^']*(?:''[^']*)*)'|"([^"]*(?:""[^"]*)*)"|([^,\s\n\r\t]*))\s*(?:,|$)/g;
+        const row = [];
+        text.replace(re_value, (m0, m1, m2, m3) => {
+          if (m1 !== undefined) row.push(m1.replace(/''/g, "'"));
+          else if (m2 !== undefined) row.push(m2.replace(/""/g, '"'));
+          else if (m3 !== undefined) row.push(m3);
+          return '';
+        });
+        return row;
+      };
+
+      const startIndex = (lines[0] && lines[0].toLowerCase().includes('name')) ? 1 : 0;
+      
+      for (let i = startIndex; i < lines.length; i++) {
+        const row = parseCsvRow(lines[i]);
         if (row.length >= 2) {
-          const name = row[0] ? row[0].replace(/"/g, '').trim() : '';
-          const code = row[1] ? row[1].replace(/"/g, '').trim() : '';
-          const interestRate = row[2] ? row[2].replace(/"/g, '').trim() : 0;
-          const originationFees = row[3] ? row[3].replace(/"/g, '').trim() : 0;
-          const minLoanAmount = row[4] ? row[4].replace(/"/g, '').trim() : 0;
-          const maxLoanAmount = row[5] ? row[5].replace(/"/g, '').trim() : 0;
-          const status = row[6] ? row[6].replace(/"/g, '').trim() : 'Pending';
+          const name = row[0] ? row[0].trim() : '';
+          const code = row[1] ? row[1].trim() : '';
+          const interestRate = row[2] ? row[2].trim() : 0;
+          const originationFees = row[3] ? row[3].trim() : 0;
+          const minLoanAmount = row[4] ? row[4].trim().replace(/,/g, '') : 0;
+          const maxLoanAmount = row[5] ? row[5].trim().replace(/,/g, '') : 0;
+          const status = row[6] ? row[6].trim() : 'Pending';
 
           if (name && code) {
             parsedStates.push({ name, code, interestRate, originationFees, minLoanAmount, maxLoanAmount, status });
@@ -310,21 +329,29 @@ const StateSettings = () => {
               </div>
               <div className="form-group">
                 <label>Min Loan Amount</label>
-                <input 
-                  type="number" 
-                  value={newMinLoanAmount} 
-                  onChange={(e) => setNewMinLoanAmount(e.target.value)} 
-                  placeholder="e.g., 1000"
-                />
+                <div className="input-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '10px', color: '#94a3b8' }}>$</span>
+                  <input 
+                    type="number" 
+                    value={newMinLoanAmount} 
+                    onChange={(e) => setNewMinLoanAmount(e.target.value)} 
+                    placeholder="e.g., 1000"
+                    style={{ paddingLeft: '30px' }}
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>Max Loan Amount</label>
-                <input 
-                  type="number" 
-                  value={newMaxLoanAmount} 
-                  onChange={(e) => setNewMaxLoanAmount(e.target.value)} 
-                  placeholder="e.g., 50000"
-                />
+                <div className="input-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '10px', color: '#94a3b8' }}>$</span>
+                  <input 
+                    type="number" 
+                    value={newMaxLoanAmount} 
+                    onChange={(e) => setNewMaxLoanAmount(e.target.value)} 
+                    placeholder="e.g., 50000"
+                    style={{ paddingLeft: '30px' }}
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={loading}>
@@ -368,8 +395,8 @@ const StateSettings = () => {
                           <td><span className="badge-code">{state.code}</span></td>
                           <td>{state.interestRate || 0}%</td>
                           <td>{state.originationFees || 0}%</td>
-                          <td>{state.minLoanAmount || 0}</td>
-                          <td>{state.maxLoanAmount || 0}</td>
+                          <td>{formatter.format(state.minLoanAmount || 0)}</td>
+                          <td>{formatter.format(state.maxLoanAmount || 0)}</td>
                           <td>
                             <span className={`badge ${state.status === 'Approved' ? 'badge-success' : 'badge-warning'}`}>
                               {state.status || 'Pending'}

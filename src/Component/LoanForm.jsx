@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import "./LoanForm.css";
 import { getApiUrl } from '../apiConfig';
@@ -26,12 +26,12 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
     citizenshipStatus: "US Citizen",
     Primary_Address_Zip_Code: "",
     Primary_Address: "",
-    Primary_Address_State: "US Citizen", // Note: The options in JSX are 'US Citizen'/'Others'. Keeping consistent even if odd naming.
+    Primary_Address_State: "", 
     Primary_Address_Country: "US Citizen",
     noOfIndividual: 0,
     Mailing_Address_Zip_Code: "",
     Mailing_Address: "",
-    Mailing_Address_State: "US Citizen",
+    Mailing_Address_State: "",
     Mailing_Address_Country: "US Citizen",
     Request_Loan_Amount: 0,
     loanPurpose: "Debt Consolidation",
@@ -60,6 +60,44 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
     smsStatus: 'Opt Out',
     potentialBorrower: false
   });
+
+  const [availableStates, setAvailableStates] = useState([]);
+  const [showOther, setShowOther] = useState({
+    primary: false,
+    mailing: false,
+    coPrimary: false,
+    coMailing: false
+  });
+
+  const handleStateChange = (field, value, type) => {
+    if (value === "Others") {
+      setShowOther(prev => ({ ...prev, [type]: true }));
+      setFormData(prev => ({ ...prev, [field]: "" }));
+    } else {
+      setShowOther(prev => ({ ...prev, [type]: false }));
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const response = await fetch(getApiUrl('/api/states'), {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // Only show approved states in the application form
+          setAvailableStates(data.filter(s => s.status === 'Approved'));
+        }
+      } catch (error) {
+        console.error("Error fetching states for dropdown:", error);
+      }
+    };
+    if (isOpen) {
+      fetchStates();
+    }
+  }, [isOpen]);
 
   const handleFileChange = (field, file) => {
     setSelectedFiles(prev => ({ ...prev, [field]: file }));
@@ -293,17 +331,24 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
               <div className="input-group">
                 <label>Primary Address State</label>
                 <select
-                  value={formData.Primary_Address_State}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      Primary_Address_State: e.target.value,
-                    })
-                  }
+                  value={showOther.primary ? "Others" : formData.Primary_Address_State}
+                  onChange={(e) => handleStateChange("Primary_Address_State", e.target.value, "primary")}
                 >
-                  <option value="US Citizen"> US Citizen</option>
-                  <option value="Others"> Others</option>
+                  <option value="">Select State</option>
+                  {availableStates.map(s => (
+                    <option key={s._id} value={s.name}>{s.name} ({s.code})</option>
+                  ))}
+                  <option value="Others">Others</option>
                 </select>
+                {showOther.primary && (
+                  <input
+                    type="text"
+                    placeholder="Enter State Name"
+                    value={formData.Primary_Address_State}
+                    onChange={(e) => setFormData({ ...formData, Primary_Address_State: e.target.value })}
+                    style={{ marginTop: '8px' }}
+                  />
+                )}
               </div>
               <div className="input-group">
                 <label>Primary Address Country *</label>
@@ -386,17 +431,24 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
               <div className="input-group">
                 <label>Mailing Address State</label>
                 <select
-                  value={formData.Mailing_Address_State}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      Mailing_Address_State: e.target.value,
-                    })
-                  }
+                  value={showOther.mailing ? "Others" : formData.Mailing_Address_State}
+                  onChange={(e) => handleStateChange("Mailing_Address_State", e.target.value, "mailing")}
                 >
-                  <option value="US Citizen"> US Citizen</option>
-                  <option value="Others"> Others</option>
+                  <option value="">Select State</option>
+                  {availableStates.map(s => (
+                    <option key={s._id} value={s.name}>{s.name} ({s.code})</option>
+                  ))}
+                  <option value="Others">Others</option>
                 </select>
+                {showOther.mailing && (
+                  <input
+                    type="text"
+                    placeholder="Enter State Name"
+                    value={formData.Mailing_Address_State}
+                    onChange={(e) => setFormData({ ...formData, Mailing_Address_State: e.target.value })}
+                    style={{ marginTop: '8px' }}
+                  />
+                )}
               </div>
               <div className="input-group">
                 <label>Mailing Address Country *</label>
@@ -637,17 +689,24 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
               <div className="input-group">
                 <label>Primary Address State</label>
                 <select
-                  value={formData.coPrimary_Address_State}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      coPrimary_Address_State: e.target.value,
-                    })
-                  }
+                  value={showOther.coPrimary ? "Others" : formData.coPrimary_Address_State}
+                  onChange={(e) => handleStateChange("coPrimary_Address_State", e.target.value, "coPrimary")}
                 >
-                  <option value="US Citizen"> US Citizen</option>
-                  <option value="Others"> Others</option>
+                  <option value="">Select State</option>
+                  {availableStates.map(s => (
+                    <option key={s._id} value={s.name}>{s.name} ({s.code})</option>
+                  ))}
+                  <option value="Others">Others</option>
                 </select>
+                {showOther.coPrimary && (
+                  <input
+                    type="text"
+                    placeholder="Enter State Name"
+                    value={formData.coPrimary_Address_State}
+                    onChange={(e) => setFormData({ ...formData, coPrimary_Address_State: e.target.value })}
+                    style={{ marginTop: '8px' }}
+                  />
+                )}
               </div>
               <div className="input-group">
                 <label>Primary Address Country *</label>
@@ -695,17 +754,24 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
               <div className="input-group">
                 <label>Mailing Address State</label>
                 <select
-                  value={formData.coMailing_Address_State}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      coMailing_Address_State: e.target.value,
-                    })
-                  }
+                  value={showOther.coMailing ? "Others" : formData.coMailing_Address_State}
+                  onChange={(e) => handleStateChange("coMailing_Address_State", e.target.value, "coMailing")}
                 >
-                  <option value="US Citizen"> US Citizen</option>
-                  <option value="Others"> Others</option>
+                  <option value="">Select State</option>
+                  {availableStates.map(s => (
+                    <option key={s._id} value={s.name}>{s.name} ({s.code})</option>
+                  ))}
+                  <option value="Others">Others</option>
                 </select>
+                {showOther.coMailing && (
+                  <input
+                    type="text"
+                    placeholder="Enter State Name"
+                    value={formData.coMailing_Address_State}
+                    onChange={(e) => setFormData({ ...formData, coMailing_Address_State: e.target.value })}
+                    style={{ marginTop: '8px' }}
+                  />
+                )}
               </div>
               <div className="input-group">
                 <label>Mailing Address Country *</label>
