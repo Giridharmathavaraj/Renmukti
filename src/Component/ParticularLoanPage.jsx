@@ -623,6 +623,7 @@ const OverviewView = ({ loanData, fullName }) => (
 const TransactionsView = ({
   loanData,
   setupDetails,
+  availableStates,
   isEditingSetup,
   setIsEditingSetup,
   handleSetupChange,
@@ -939,15 +940,22 @@ const TransactionsView = ({
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <span style={{ width: '160px', fontSize: '14px', color: '#555', textAlign: 'right' }}>Underwriting/Refinance<br />Fee</span>
-                  <div style={{ display: 'flex', alignItems: 'center', flex: 1, border: '1px solid #ccc', borderRadius: '4px', overflow: 'hidden' }}>
-                    <span style={{ padding: '8px 12px', backgroundColor: '#f8f9fa', borderRight: '1px solid #ccc', color: '#555' }}>$</span>
-                    <input
-                      type="number"
-                      name="underwritingRefinanceFee"
-                      value={setupDetails.underwritingRefinanceFee}
-                      onChange={handleSetupChange}
-                      style={{ border: 'none', padding: '8px', flex: 1, outline: 'none' }}
-                    />
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ccc', borderRadius: '4px', overflow: 'hidden' }}>
+                      <span style={{ padding: '8px 12px', backgroundColor: '#f8f9fa', borderRight: '1px solid #ccc', color: '#555' }}>$</span>
+                      <input
+                        type="number"
+                        name="underwritingRefinanceFee"
+                        value={setupDetails.underwritingRefinanceFee}
+                        onChange={handleSetupChange}
+                        style={{ border: 'none', padding: '8px', flex: 1, outline: 'none' }}
+                      />
+                    </div>
+                    {loanData?.Primary_Address_State && availableStates.some(s => s.name === loanData.Primary_Address_State) && (
+                      <span style={{ fontSize: '11px', color: '#666', marginLeft: '4px' }}>
+                        (Calculated at {availableStates.find(s => s.name === loanData.Primary_Address_State)?.originationFees}% of Amount)
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1487,6 +1495,26 @@ function ParticularLoanPage() {
     Request_Loan_Amount: loanData?.Request_Loan_Amount || 0
   });
 
+  const [availableStates, setAvailableStates] = React.useState([]);
+
+  // Fetch approved states for calculations
+  React.useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const response = await fetch(getApiUrl('/api/states'), {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableStates(data.filter(s => s.status === 'Approved'));
+        }
+      } catch (error) {
+        console.error("Error fetching states:", error);
+      }
+    };
+    fetchStates();
+  }, []);
+
   React.useEffect(() => {
     const fetchFreshData = async (id) => {
       try {
@@ -1527,10 +1555,23 @@ function ParticularLoanPage() {
 
   const handleSetupChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setSetupDetails(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    const isAmount = name === 'Request_Loan_Amount';
+    
+    setSetupDetails(prev => {
+      const updates = { ...prev, [name]: type === 'checkbox' ? checked : value };
+      
+      // Auto-calculate fee if amount changes
+      if (isAmount && loanData?.Primary_Address_State) {
+        const stateConfig = availableStates.find(s => s.name === loanData.Primary_Address_State);
+        if (stateConfig) {
+          const amount = Number(value) || 0;
+          const feePercent = stateConfig.originationFees || 0;
+          updates.underwritingRefinanceFee = (amount * feePercent) / 100;
+        }
+      }
+      
+      return updates;
+    });
   };
 
   const handleSaveSetup = async () => {
@@ -1930,6 +1971,7 @@ function ParticularLoanPage() {
         <TransactionsView
           loanData={loanData}
           setupDetails={setupDetails}
+          availableStates={availableStates}
           isEditingSetup={isEditingSetup}
           setIsEditingSetup={setIsEditingSetup}
           handleSetupChange={handleSetupChange}

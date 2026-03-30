@@ -26,7 +26,7 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
     citizenshipStatus: "US Citizen",
     Primary_Address_Zip_Code: "",
     Primary_Address: "",
-    Primary_Address_State: "", 
+    Primary_Address_State: "",
     Primary_Address_Country: "US Citizen",
     noOfIndividual: 0,
     Mailing_Address_Zip_Code: "",
@@ -58,10 +58,14 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
     coMailing_Address_Country: "",
     checkBox: true,
     smsStatus: 'Opt Out',
-    potentialBorrower: false
+    potentialBorrower: false,
+    interestRate: 12,
+    underwritingRefinanceFee: 0
   });
 
   const [availableStates, setAvailableStates] = useState([]);
+  const [selectedStateConfig, setSelectedStateConfig] = useState(null);
+  const [amountError, setAmountError] = useState("");
   const [showOther, setShowOther] = useState({
     primary: false,
     mailing: false,
@@ -73,10 +77,62 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
     if (value === "Others") {
       setShowOther(prev => ({ ...prev, [type]: true }));
       setFormData(prev => ({ ...prev, [field]: "" }));
+      if (type === 'primary') {
+        setSelectedStateConfig(null);
+        setAmountError("");
+      }
     } else {
       setShowOther(prev => ({ ...prev, [type]: false }));
       setFormData(prev => ({ ...prev, [field]: value }));
+      
+      // Auto-populate logic for Primary Address State
+      if (type === 'primary') {
+        const stateConfig = availableStates.find(s => s.name === value);
+        if (stateConfig) {
+          setSelectedStateConfig(stateConfig);
+          
+          const amount = Number(formData.Request_Loan_Amount) || 0;
+          const feePercent = stateConfig.originationFees || 0;
+          const calculatedFee = (amount * feePercent) / 100;
+
+          setFormData(prev => ({
+            ...prev,
+            [field]: value,
+            interestRate: stateConfig.interestRate || 12,
+            underwritingRefinanceFee: calculatedFee
+          }));
+          validateAmount(amount, stateConfig);
+        } else {
+          setSelectedStateConfig(null);
+          setAmountError("");
+        }
+      }
     }
+  };
+
+  const validateAmount = (amount, config) => {
+    if (!config) return;
+    const val = Number(amount);
+    if (config.minLoanAmount && val < config.minLoanAmount) {
+      setAmountError(`Min loan for ${config.name} is $${config.minLoanAmount.toLocaleString()}`);
+    } else if (config.maxLoanAmount && val > config.maxLoanAmount) {
+      setAmountError(`Max loan for ${config.name} is $${config.maxLoanAmount.toLocaleString()}`);
+    } else {
+      setAmountError("");
+    }
+  };
+
+  const handleAmountChange = (val) => {
+    const amount = Number(val) || 0;
+    const updates = { Request_Loan_Amount: val };
+
+    if (selectedStateConfig) {
+      const feePercent = selectedStateConfig.originationFees || 0;
+      updates.underwritingRefinanceFee = (amount * feePercent) / 100;
+      validateAmount(val, selectedStateConfig);
+    }
+
+    setFormData(prev => ({ ...prev, ...updates }));
   };
 
   useEffect(() => {
@@ -183,6 +239,12 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
         <div className="modal-body-gradient">
           <div className="application-card">
             <h2 className="form-main-title">LOAN APPLICATION</h2>
+            
+            {amountError && (
+              <div style={{ backgroundColor: '#fff5f5', color: '#e53e3e', padding: '12px', borderRadius: '4px', marginBottom: '16px', fontSize: '13px', fontWeight: '500', border: '1px solid #feb2b2' }}>
+                ⚠️ {amountError}
+              </div>
+            )}
 
             <form className="form-content" onSubmit={handleSubmit}>
               <div className="input-group">
@@ -473,15 +535,39 @@ const LoanForm = ({ isOpen, onClose, onLoanAdded }) => {
               <div className="input-group">
                 <label>Request Loan Amount *</label>
                 <input
-                  type="text"
+                  type="number"
                   value={formData.Request_Loan_Amount}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      Request_Loan_Amount: e.target.value,
-                    })
-                  }
+                  onChange={(e) => handleAmountChange(e.target.value)}
+                  style={{ borderColor: amountError ? '#e53e3e' : undefined }}
                 />
+              </div>
+              <div className="input-group">
+                <label>Interest Rate (%)</label>
+                <input
+                  type="number"
+                  value={formData.interestRate}
+                  onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
+                  placeholder="Inherited from State"
+                />
+                {formData.Request_Loan_Amount > 0 && formData.interestRate > 0 && (
+                   <span style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                     Est. Interest: ${(Number(formData.Request_Loan_Amount) * Number(formData.interestRate) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                   </span>
+                )}
+              </div>
+              <div className="input-group">
+                <label>Underwriting/Refinance Fee ($)</label>
+                <input
+                  type="number"
+                  value={formData.underwritingRefinanceFee}
+                  onChange={(e) => setFormData({ ...formData, underwritingRefinanceFee: e.target.value })}
+                  placeholder="Calculated from State Fee %"
+                />
+                {selectedStateConfig && (
+                   <span style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                     (Calculated at {selectedStateConfig.originationFees}% of Amount)
+                   </span>
+                )}
               </div>
               <div className="input-group">
                 <label>Loan Purpose *</label>
