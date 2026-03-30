@@ -844,6 +844,24 @@ const TransactionsView = ({
                   </div>
                 </div>
 
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <span style={{ width: '120px', fontSize: '12px', color: '#555', textAlign: 'right' }}>State</span>
+                  <div style={{ flex: 1 }}>
+                    <select
+                      name="Primary_Address_State"
+                      value={setupDetails.Primary_Address_State}
+                      onChange={handleSetupChange}
+                      style={{ width: '100%', border: '1px solid #ccc', padding: '8px', borderRadius: '4px', outline: 'none', backgroundColor: '#fff' }}
+                    >
+                      <option value="">Select State</option>
+                      {availableStates.map(state => (
+                        <option key={state._id} value={state.name}>{state.name}</option>
+                      ))}
+                      <option value="Others">Others</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <h4 style={{ margin: '0 0 12px 136px', fontSize: '12px', color: '#333' }}>Interest rate</h4>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
@@ -866,6 +884,18 @@ const TransactionsView = ({
                           <option value="Annually">Annually</option>
                           <option value="Monthly">Monthly</option>
                         </select>
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        {setupDetails.Request_Loan_Amount > 0 && setupDetails.interestRate > 0 && (
+                          <span style={{ fontSize: '11px', color: '#666', display: 'block' }}>
+                            Est. Interest: ${(Number(setupDetails.Request_Loan_Amount) * Number(setupDetails.interestRate) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </span>
+                        )}
+                        {availableStates.find(s => s.name === setupDetails.Primary_Address_State) && (
+                          <span style={{ fontSize: '11px', color: '#007bff' }}>
+                            State Rule: {availableStates.find(s => s.name === setupDetails.Primary_Address_State)?.interestRate || 12}%
+                          </span>
+                        )}
                       </div>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#666', cursor: 'pointer' }}>
                         <input
@@ -951,9 +981,9 @@ const TransactionsView = ({
                         style={{ border: 'none', padding: '8px', flex: 1, outline: 'none' }}
                       />
                     </div>
-                    {loanData?.Primary_Address_State && availableStates.some(s => s.name === loanData.Primary_Address_State) && (
+                    {setupDetails.Primary_Address_State && availableStates.some(s => s.name === setupDetails.Primary_Address_State) && (
                       <span style={{ fontSize: '11px', color: '#666', marginLeft: '4px' }}>
-                        (Calculated at {availableStates.find(s => s.name === loanData.Primary_Address_State)?.originationFees}% of Amount)
+                        (Calculated at {availableStates.find(s => s.name === setupDetails.Primary_Address_State)?.originationFees}% of Amount)
                       </span>
                     )}
                   </div>
@@ -1492,7 +1522,8 @@ function ParticularLoanPage() {
     discount: loanData?.discount || 0,
     underwritingRefinanceFee: loanData?.underwritingRefinanceFee || 0,
     paymentFrequency: loanData?.paymentFrequency || 'Monthly',
-    Request_Loan_Amount: loanData?.Request_Loan_Amount || 0
+    Request_Loan_Amount: loanData?.Request_Loan_Amount || 0,
+    Primary_Address_State: loanData?.Primary_Address_State || ''
   });
 
   const [availableStates, setAvailableStates] = React.useState([]);
@@ -1542,7 +1573,8 @@ function ParticularLoanPage() {
           discount: freshData?.discount || prev.discount,
           underwritingRefinanceFee: freshData?.underwritingRefinanceFee || prev.underwritingRefinanceFee,
           paymentFrequency: freshData?.paymentFrequency || prev.paymentFrequency,
-          Request_Loan_Amount: freshData?.Request_Loan_Amount || prev.Request_Loan_Amount
+          Request_Loan_Amount: freshData?.Request_Loan_Amount || prev.Request_Loan_Amount,
+          Primary_Address_State: freshData?.Primary_Address_State || prev.Primary_Address_State
         }));
       } catch (err) {
         console.error("Error fetching fresh loan data on mount:", err);
@@ -1556,17 +1588,23 @@ function ParticularLoanPage() {
   const handleSetupChange = (e) => {
     const { name, value, type, checked } = e.target;
     const isAmount = name === 'Request_Loan_Amount';
+    const isState = name === 'Primary_Address_State';
     
     setSetupDetails(prev => {
       const updates = { ...prev, [name]: type === 'checkbox' ? checked : value };
       
-      // Auto-calculate fee if amount changes
-      if (isAmount && loanData?.Primary_Address_State) {
-        const stateConfig = availableStates.find(s => s.name === loanData.Primary_Address_State);
-        if (stateConfig) {
-          const amount = Number(value) || 0;
+      const targetState = isState ? value : prev.Primary_Address_State;
+      const targetAmount = isAmount ? Number(value) : Number(prev.Request_Loan_Amount);
+      
+      const stateConfig = availableStates.find(s => s.name === targetState);
+      
+      if (stateConfig) {
+        if (isState) {
+          updates.interestRate = stateConfig.interestRate || 12;
+        }
+        if (isAmount || isState) {
           const feePercent = stateConfig.originationFees || 0;
-          updates.underwritingRefinanceFee = (amount * feePercent) / 100;
+          updates.underwritingRefinanceFee = (targetAmount * feePercent) / 100;
         }
       }
       
