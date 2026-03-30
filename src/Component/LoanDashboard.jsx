@@ -399,33 +399,20 @@ const LoanDashboard = () => {
     reader.readAsText(file);
   };
 
-  const handleControl = async (loan) => {
-    try {
-      // Use the full _id which we added to the mapped data
-      const loanId = loan._id;
-      console.log("Fetching full details for:", loanId);
-
-      const response = await fetch(getApiUrl(`/api/loans/${loanId}`), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+  const handleControl = (loan) => {
+    // Navigate immediately using the existing loan data in loan.raw
+    // ParticularLoanPage will fetch its own fresh data if needed
+    if (loan && loan._id) {
+      navigate('/particular-loan', { 
+        state: { 
+          loanData: loan.raw,
+          loanId: loan._id 
+        } 
       });
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Full details:", data);
-        console.log(`Loan Details:\nName: ${data.firstName} ${data.lastName}\nEmail: ${data.email}\nBalance: $${data.Request_Loan_Amount}`);
-
-        // navigator('./ParticularUserPage')
-        navigate('/particular-loan', { state: { loanData: data } });
-      } else {
-        console.error("Failed to fetch details:", response.status);
-        console.log("Failed to fetch loan details. Server returned " + response.status);
-      }
-    } catch (error) {
-      console.error("Error in handleControl:", error);
-      console.log("Error fetching details: " + error.message);
+    } else {
+      console.error("Invalid loan record selected");
     }
-  }
+  };
 
   return (
     <div className="dashboard-wrapper">
