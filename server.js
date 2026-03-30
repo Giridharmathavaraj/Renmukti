@@ -63,11 +63,11 @@ app.use(cors());
 
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  
+
   // Basic Pre-fixing logic for production builds, optional on localhost
   const apiPrefixes = ['/loans', '/users', '/companies', '/login', '/register', '/health', '/api'];
   const needsPrefix = apiPrefixes.some(p => req.url.startsWith(p));
-  
+
   if (needsPrefix && !req.url.startsWith('/api')) {
     req.url = '/api' + req.url;
     console.log(`[Harden] Re-prefixed URL: ${req.url}`);
@@ -486,7 +486,7 @@ app.put('/api/loans/:id', authenticateToken, async (req, res) => {
 
     res.json({ ...updatedLoan.toObject(), mailSent });
   } catch (error) {
-    console.error("SMTP Error:", error); res.status(400).json({ message: error.message });
+    console.error("Update Loan Error:", error); res.status(400).json({ message: error.message });
   }
 });
 
