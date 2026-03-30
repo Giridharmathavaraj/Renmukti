@@ -402,6 +402,9 @@ const LoanDashboard = () => {
   const handleControl = (loan) => {
     // Navigate immediately using the existing loan data in loan.raw
     // ParticularLoanPage will fetch its own fresh data if needed
+    console.log("handleControl clicked for:", loan?._id);
+    // window.alert("Clicked: " + (loan?.name || "Unknown"));
+    
     if (loan && loan._id) {
       navigate('/particular-loan', { 
         state: { 
