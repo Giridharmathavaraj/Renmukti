@@ -9,6 +9,7 @@ import Users from './Component/New Users/Users';
 import RecordForm from './Component/New Users/Addusers';
 import Companies from './Component/Companies/Companies';
 import AddCompany from './Component/Companies/AddCompany';
+import StateSettings from './Component/Settings/StateSettings';
 
 import './App.css'
 
@@ -42,6 +43,7 @@ function App() {
         <Route path="/Addusers" element={isAuthenticated ? <RecordForm /> : <Navigate to="/login" />} />
         <Route path="/companies" element={isAuthenticated ? <Companies /> : <Navigate to="/login" />} />
         <Route path="/add-company" element={isAuthenticated ? <AddCompany /> : <Navigate to="/login" />} />
+        <Route path="/settings/states" element={isAuthenticated ? <StateSettings /> : <Navigate to="/login" />} />
       </Routes>
     </>
   )

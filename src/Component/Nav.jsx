@@ -9,9 +9,11 @@ function Nav() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [username, setUsername] = useState('User');
   const [role, setRole] = useState('');
   const dropdownRef = useRef(null);
+  const settingsRef = useRef(null);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem('username');
@@ -27,6 +29,9 @@ function Nav() {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
+        setIsSettingsOpen(false);
       }
     };
 
@@ -63,7 +68,23 @@ function Nav() {
             {(role === 'superadmin' || role === 'admin') && (
               <a href="#" className={location.pathname === '/Users' ? "active" : ""} onClick={(e) => { e.preventDefault(); navigate('/Users'); }}>Users <ChevronDown size={14} /></a>
             )}
-            <a href="#">Settings <ChevronDown size={14} /></a>
+            <div className="nav-dropdown" ref={settingsRef} style={{ position: 'relative', display: 'inline-block' }}>
+              <a href="#" onClick={(e) => { e.preventDefault(); setIsSettingsOpen(!isSettingsOpen); }} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                Settings <ChevronDown size={14} style={{ transform: isSettingsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </a>
+              {isSettingsOpen && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '8px', background: 'white', border: '1px solid #eee', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 100, minWidth: '150px', padding: '8px 0' }}>
+                  <button 
+                    onClick={() => { setIsSettingsOpen(false); navigate('/settings/states'); }} 
+                    style={{ display: 'block', width: '100%', padding: '8px 16px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', color: '#333' }}
+                    onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                    onMouseLeave={(e) => e.target.style.background = 'none'}
+                  >
+                    State Configurations
+                  </button>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
         <div className="header-right">

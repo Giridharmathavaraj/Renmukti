@@ -12,6 +12,7 @@ import jwt from 'jsonwebtoken';
 import Loan from './src/models/Loan.js';
 import User from './src/models/User.js';
 import Company from './src/models/Company.js';
+import State from './src/models/State.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -65,7 +66,7 @@ app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
 
   // Basic Pre-fixing logic for production builds, optional on localhost
-  const apiPrefixes = ['/loans', '/users', '/companies', '/login', '/register', '/health', '/api'];
+  const apiPrefixes = ['/loans', '/users', '/companies', '/states', '/login', '/register', '/health', '/api'];
   const needsPrefix = apiPrefixes.some(p => req.url.startsWith(p));
 
   if (needsPrefix && !req.url.startsWith('/api')) {
@@ -169,6 +170,155 @@ app.put('/api/companies/:id', authenticateToken, async (req, res) => {
     res.json(updatedCompany);
   } catch (error) {
     console.error("Update Company Error:", error); res.status(400).json({ message: error.message });
+  }
+});
+
+// --- State Routes ---
+
+app.get('/api/states', authenticateToken, async (req, res) => {
+  try {
+    let query = {};
+    if (req.user.companyId && req.user.role !== 'superadmin') {
+      query.companyId = req.user.companyId;
+    }
+    const states = await State.find(query).sort({ name: 1 });
+    res.json(states);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/states', authenticateToken, async (req, res) => {
+  try {
+    const { name, code, interestRate, originationFees, status, minLoanAmount, maxLoanAmount } = req.body;
+    let companyId = req.user.companyId || null;
+
+    if (!name || !code) return res.status(400).json({ error: 'Name and Code are required' });
+
+    const existingState = await State.findOne({ name: name.trim(), companyId: companyId });
+    if (existingState) return res.status(400).json({ error: 'State with this name already exists' });
+
+    const newState = new State({ 
+      name: name.trim(), 
+      code: code.trim().toUpperCase(), 
+      interestRate: Number(interestRate) || 0,
+      originationFees: Number(originationFees) || 0,
+      minLoanAmount: Number(minLoanAmount) || 0,
+      maxLoanAmount: Number(maxLoanAmount) || 0,
+      status: status === 'Approved' ? 'Approved' : 'Pending',
+      companyId 
+    });
+    await newState.save();
+    res.status(201).json(newState);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+app.post('/api/states/import', authenticateToken, async (req, res) => {
+  try {
+    const { states } = req.body; // Array of objects {name, code}
+    const companyId = req.user.companyId || null;
+
+    if (!Array.isArray(states)) return res.status(400).json({ error: 'Expected an array of states' });
+
+    const addedStates = [];
+    const errors = [];
+
+    for (const s of states) {
+      if (!s.name || !s.code) continue;
+      try {
+        const existing = await State.findOne({ 
+            $or: [{ name: s.name.trim() }, { code: s.code.trim().toUpperCase() }],
+            companyId 
+        });
+        
+        if (!existing) {
+          const newState = new State({ 
+            name: s.name.trim(), 
+            code: s.code.trim().toUpperCase(), 
+            interestRate: Number(s.interestRate) || 0,
+            originationFees: Number(s.originationFees) || 0,
+            minLoanAmount: Number(s.minLoanAmount) || 0,
+            maxLoanAmount: Number(s.maxLoanAmount) || 0,
+            status: s.status === 'Approved' ? 'Approved' : 'Pending',
+            companyId 
+          });
+          await newState.save();
+          addedStates.push(newState);
+        }
+      } catch (err) {
+        errors.push(`Failed to import ${s.name}: ${err.message}`);
+      }
+    }
+
+    res.status(200).json({ importedCount: addedStates.length, addedStates, errors });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/states/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, code, interestRate, originationFees, minLoanAmount, maxLoanAmount, status } = req.body;
+    let query = { _id: id };
+    if (req.user.companyId && req.user.role !== 'superadmin') {
+      query.companyId = req.user.companyId;
+    }
+    
+    const updatedState = await State.findOneAndUpdate(query, {
+      name,
+      code: code?.toUpperCase(),
+      interestRate,
+      originationFees,
+      minLoanAmount,
+      maxLoanAmount,
+      status
+    }, { new: true });
+
+    if (!updatedState) return res.status(404).json({ error: 'State not found or unauthorized' });
+    res.json(updatedState);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/states/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    let query = { _id: id };
+    if (req.user.companyId && req.user.role !== 'superadmin') {
+      query.companyId = req.user.companyId;
+    }
+    
+    const deletedState = await State.findOneAndDelete(query);
+    if (!deletedState) return res.status(404).json({ error: 'State not found or unauthorized' });
+    
+    res.json({ message: 'State deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/states/:id/status', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    let query = { _id: id };
+    if (req.user.companyId && req.user.role !== 'superadmin') {
+      query.companyId = req.user.companyId;
+    }
+    
+    if (!['Pending', 'Approved'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const updatedState = await State.findOneAndUpdate(query, { status }, { new: true });
+    if (!updatedState) return res.status(404).json({ error: 'State not found or unauthorized' });
+    
+    res.json(updatedState);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
