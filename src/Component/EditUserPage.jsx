@@ -76,7 +76,7 @@ function EditUserPage() {
             console.log('Loan updated:', updatedLoan);
 
             // Navigate back with the UPDATED loan data from the server response
-            navigate('/ParticularUserPage', { state: { loanData: updatedLoan } });
+            navigate('/particular-loan', { state: { loanData: updatedLoan } });
 
         } catch (err) {
             console.error("Error updating loan:", err);

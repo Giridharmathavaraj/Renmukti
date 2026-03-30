@@ -91,7 +91,7 @@ function Nav() {
                   <span className="user-role" style={{ textTransform: 'capitalize' }}>{role || 'User'}</span>
                 </div>
                 <div className="dropdown-divider"></div>
-                <button className="dropdown-item" onClick={() => navigate('/ParticularUserPage')}>
+                <button className="dropdown-item" onClick={() => navigate('/particular-loan')}>
                   <UserCircle size={16} />
                   My Details
                 </button>

@@ -6,7 +6,7 @@ import {
   User, Mail, Phone, MapPin, Globe, Twitter, Linkedin,
   ChevronDown, Settings, CreditCard, FileText, ChevronRight, Calendar, DollarSign, Percent, Activity
 } from 'lucide-react';
-import './ParticularUserPage.css';
+import './ParticularLoanPage.css';
 import Nav from './Nav';
 
 
@@ -1459,7 +1459,7 @@ const BankingView = ({
   );
 };
 
-function ParticularUserPage() {
+function ParticularLoanPage() {
 
 
 
@@ -1984,4 +1984,4 @@ function ParticularUserPage() {
   );
 }
 
-export default ParticularUserPage;
+export default ParticularLoanPage;

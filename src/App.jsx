@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoanDashboard from './Component/LoanDashboard';
-import ParticularUserPage from './Component/ParticularUserPage';
+import ParticularLoanPage from './Component/ParticularLoanPage';
 import EditUserPage from './Component/EditUserPage';
 import LoginPage from './Component/LoginPage';
 import CompanyDashboard from './Component/CompanyDashboard';
@@ -36,7 +36,7 @@ function App() {
 
         <Route path="/" element={isAuthenticated ? <LoanDashboard /> : <Navigate to="/login" />} />
         <Route path="/company-dashboard" element={isAuthenticated ? <CompanyDashboard /> : <Navigate to="/login" />} />
-        <Route path="/ParticularUserPage" element={isAuthenticated ? <ParticularUserPage /> : <Navigate to="/login" />} />
+        <Route path="/particular-loan" element={isAuthenticated ? <ParticularLoanPage /> : <Navigate to="/login" />} />
         <Route path="/EditUserPage" element={isAuthenticated ? <EditUserPage /> : <Navigate to="/login" />} />
         <Route path="/Users" element={isAuthenticated ? <Users /> : <Navigate to="/login" />} />
         <Route path="/Addusers" element={isAuthenticated ? <RecordForm /> : <Navigate to="/login" />} />

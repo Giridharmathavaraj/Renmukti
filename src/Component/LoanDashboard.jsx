@@ -8,7 +8,7 @@ import {
   Search, Pin, List, Plus, MoreVertical, ChevronUp, ChevronsUpDown, Activity // Added Activity
 } from 'lucide-react';
 import LoanForm from './LoanForm';
-import ParticularUserPage from './ParticularUserPage';
+import ParticularLoanPage from './ParticularLoanPage';
 
 const LoanDashboard = () => {
   const navigate = useNavigate();
@@ -416,7 +416,7 @@ const LoanDashboard = () => {
         console.log(`Loan Details:\nName: ${data.firstName} ${data.lastName}\nEmail: ${data.email}\nBalance: $${data.Request_Loan_Amount}`);
 
         // navigator('./ParticularUserPage')
-        navigate('/ParticularUserPage', { state: { loanData: data } });
+        navigate('/particular-loan', { state: { loanData: data } });
       } else {
         console.error("Failed to fetch details:", response.status);
         console.log("Failed to fetch loan details. Server returned " + response.status);

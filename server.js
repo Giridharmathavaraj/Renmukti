@@ -19,7 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-const JWT_SECRET = 'your_super_secret_jwt_key_here'; // In production, use environment variables!
+const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_here'; // In production, use environment variables!
 
 let emailTransporter;
 
@@ -168,7 +168,7 @@ app.put('/api/companies/:id', authenticateToken, async (req, res) => {
 
     res.json(updatedCompany);
   } catch (error) {
-    console.error("SMTP Error:", error); res.status(400).json({ message: error.message });
+    console.error("Update Company Error:", error); res.status(400).json({ message: error.message });
   }
 });
 
@@ -310,7 +310,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
 
     res.json(updatedUser);
   } catch (error) {
-    console.error("SMTP Error:", error); res.status(400).json({ message: error.message });
+    console.error("Update User Error:", error); res.status(400).json({ message: error.message });
   }
 });
 
@@ -580,7 +580,7 @@ app.post('/api/loans/:id/send-email', authenticateToken, async (req, res) => {
       res.status(500).json({ message: "Email transporter not configured" });
     }
   } catch (error) {
-    console.error("SMTP Error:", error); res.status(400).json({ message: error.message });
+    console.error("Send Email Route Error:", error); res.status(400).json({ message: error.message });
   }
 });
 // --- Static Assets (Production) ---
