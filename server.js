@@ -64,13 +64,7 @@ app.use(cors());
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   
-  // Catalyst Hardening: Strip the function name prefix if present
-  if (req.url.startsWith('/server/phase1')) {
-    req.url = req.url.replace('/server/phase1', '');
-    console.log(`[Catalyst] Stripped prefix, new URL: ${req.url}`);
-  }
-
-  // Hardening: If Catalyst/Onslate strips /api/ from the URL, add it back for Express routes
+  // Basic Pre-fixing logic for production builds, optional on localhost
   const apiPrefixes = ['/loans', '/users', '/companies', '/login', '/register', '/health', '/api'];
   const needsPrefix = apiPrefixes.some(p => req.url.startsWith(p));
   
