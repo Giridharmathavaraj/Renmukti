@@ -1,11 +1,9 @@
+import 'dotenv/config';
 import express from 'express';
 import nodemailer from 'nodemailer';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import fs from 'fs';
-
-dotenv.config();
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -82,10 +80,19 @@ app.get('/api/health', (req, res) => {
 });
 
 // Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://giridharmathavaraj_db_user:JlqWzElUK6bDDVUt@cluster0.kjqzoqe.mongodb.net/';
+const DEFAULT_ATLAS_URI = 'mongodb+srv://giridharmathavaraj_db_user:JlqWzElUK6bDDVUt@cluster0.kjqzoqe.mongodb.net/loanpro_db?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI || DEFAULT_ATLAS_URI;
+
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch(err => console.error('❌ MongoDB Connection Error:', err));
+  .then(() => {
+    const isAtlas = MONGODB_URI.includes('mongodb+srv');
+    const dbName = mongoose.connection.name;
+    console.log(`✅ MongoDB Connected to ${isAtlas ? 'Atlas' : 'Local'} (${dbName})`);
+  })
+  .catch(err => {
+    console.error('❌ MongoDB Connection Error:', err.message);
+    process.exit(1); // Exit if DB connection fails
+  });
 
 // --- Authentication Middleware ---
 const authenticateToken = (req, res, next) => {

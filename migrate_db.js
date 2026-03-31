@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import User from './src/models/User.js';
 import Company from './src/models/Company.js';
 import Loan from './src/models/Loan.js';
+import State from './src/models/State.js';
 
 const LOCAL_URI = 'mongodb://127.0.0.1:27017/loanpro_db';
 const REMOTE_URI = 'mongodb+srv://giridharmathavaraj_db_user:JlqWzElUK6bDDVUt@cluster0.kjqzoqe.mongodb.net/loanpro_db?retryWrites=true&w=majority';
@@ -35,33 +36,39 @@ async function migrate() {
         const LocalUser = localDb.model('User', User.schema);
         const LocalCompany = localDb.model('Company', Company.schema);
         const LocalLoan = localDb.model('Loan', Loan.schema);
+        const LocalState = localDb.model('State', State.schema);
 
         const RemoteUser = remoteDb.model('User', User.schema);
         const RemoteCompany = remoteDb.model('Company', Company.schema);
         const RemoteLoan = remoteDb.model('Loan', Loan.schema);
+        const RemoteState = remoteDb.model('State', State.schema);
 
         // Fetch all local data
         console.log("Reading data from Local Database...");
         const users = await LocalUser.find().lean();
         const companies = await LocalCompany.find().lean();
         const loans = await LocalLoan.find().lean();
+        const states = await LocalState.find().lean();
 
         console.log(`Found:
         - ${users.length} Users
         - ${companies.length} Companies
-        - ${loans.length} Loans`);
+        - ${loans.length} Loans
+        - ${states.length} States`);
 
         // Important: For safe migration without duplicating, we will clear the remote collections first
         console.log("Clearing Remote Database collections to prevent duplicates (it should be empty anyway)...");
         await RemoteUser.deleteMany({});
         await RemoteCompany.deleteMany({});
         await RemoteLoan.deleteMany({});
+        await RemoteState.deleteMany({});
 
         // Insert data into remote DB preserving exactly the same _ids
         console.log("Copying data to Remote Database...");
         if (users.length > 0) await RemoteUser.insertMany(users);
         if (companies.length > 0) await RemoteCompany.insertMany(companies);
         if (loans.length > 0) await RemoteLoan.insertMany(loans);
+        if (states.length > 0) await RemoteState.insertMany(states);
 
         console.log("✅ Migration completed successfully! ALL DATA HAS BEEN COPIED TO LIVE ATLAS.");
         
